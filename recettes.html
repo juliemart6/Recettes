@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-[#FAF7F2] text-[#2C302E]">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mes Gamelles & Batch Cooking - 100 Recettes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brandBg: '#FAF7F2', brandCard: '#FFFFFF', brandCardMuted: '#F4EFEA',
+            brandPrimary: '#5A7862', brandPrimaryHover: '#48624F',
+            brandAccent: '#C86D51', brandAccentHover: '#B0593E',
+            brandDark: '#2C302E', brandBorder: '#E2DACF'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .chart-container { position: relative; width: 100%; max-width: 500px; margin: 0 auto; height: 260px; max-height: 300px; }
+    @media (min-width: 768px) { .chart-container { height: 280px; } }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #FAF7F2; }
+    ::-webkit-scrollbar-thumb { background: #D3C7B8; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #B5A695; }
+    @media print {
+      body { background-color: white !important; color: black !important; }
+      header, .nav-tab, button, #sec-dashboard { display: none !important; }
+      main { padding: 0 !important; margin: 0 !important; }
+      .bg-white { border: none !important; box-shadow: none !important; }
+      #sec-shopping { display: block !important; }
+      #shoppingAislesContainer { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 1rem !important; }
+      .print-title::before { content: "📝 Mes Courses Batch Cooking"; display: block; font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem; }
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans antialiased bg-[#FAF7F2]">
+  <header class="bg-white border-b border-brandBorder sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <span class="text-3xl bg-amber-100 p-2 rounded-2xl">🍱</span>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-brandDark">Édition Gamelles</h1>
+          <p class="text-xs text-stone-500 font-medium">100 Recettes pour 2 personnes (Dîner + Gamelle = 4 portions)</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="switchTab('planning')" class="flex items-center gap-2 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-xl border border-stone-200 transition">
+          <span>🗓️ Menu :</span><span id="headerMenuCount" class="bg-brandAccent text-white px-2 py-0.5 rounded-full text-xs font-bold">0 plat</span>
+        </button>
+        <button onclick="switchTab('shopping')" class="flex items-center gap-2 bg-brandPrimary text-white text-xs sm:text-sm font-semibold px-3.5 py-1.5 rounded-xl hover:bg-brandPrimaryHover transition shadow-sm">
+          <span>🛒 Courses</span><span id="headerShoppingBadge" class="bg-white/20 text-white px-1.5 py-0.5 rounded-lg text-xs font-bold">0</span>
+        </button>
+      </div>
+    </div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1 sm:space-x-4 border-t border-stone-100 overflow-x-auto no-scrollbar text-sm font-medium">
+      <button id="tab-recipes" onclick="switchTab('recipes')" class="nav-tab text-brandPrimary border-b-2 border-brandPrimary py-2.5 px-3 whitespace-nowrap font-semibold">📖 Les 100 Recettes</button>
+      <button id="tab-planning" onclick="switchTab('planning')" class="nav-tab text-stone-500 hover:text-brandDark border-b-2 border-transparent py-2.5 px-3 whitespace-nowrap">🗓️ Mon Planning (<span id="planningTabBadge">0</span>)</button>
+      <button id="tab-shopping" onclick="switchTab('shopping')" class="nav-tab text-stone-500 hover:text-brandDark border-b-2 border-transparent py-2.5 px-3 whitespace-nowrap">🛒 Liste de Courses</button>
+      <button id="tab-dashboard" onclick="switchTab('dashboard')" class="nav-tab text-stone-500 hover:text-brandDark border-b-2 border-transparent py-2.5 px-3 whitespace-nowrap">📊 Astuces Gamelles</button>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <!-- SECTION RECIPES -->
+    <section id="sec-recipes" class="space-y-6">
+      <div class="bg-white p-4 rounded-2xl border border-brandBorder shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-brandDark">Bibliothèque de Recettes (100 plats)</h2>
+          <p class="text-sm text-stone-600 mt-1">Spécialement conçues pour le dîner + la gamelle du midi (4 portions). Sans choux de bruxelles, ni coriandre !</p>
+        </div>
+        <button onclick="pickRandomRecipe()" class="inline-flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold px-4 py-2.5 rounded-xl border border-amber-200 text-sm transition">
+          🎲 Idée au hasard !
+        </button>
+      </div>
+
+      <div class="bg-white p-4 rounded-2xl border border-brandBorder shadow-sm space-y-3">
+        <div class="flex flex-col sm:flex-row gap-2">
+          <div class="relative flex-1">
+            <input type="text" id="searchInput" oninput="applyFilters()" placeholder="Rechercher (ex: poulet, gnocchis, fajitas)..." class="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brandPrimary">
+            <span class="absolute left-3.5 top-3 text-stone-400">🔍</span>
+          </div>
+          <button id="btn-fav-filter" onclick="toggleFavFilter()" class="border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 px-4 py-2.5 rounded-xl transition text-sm font-semibold flex items-center gap-2 shrink-0">
+            🤍 Mes Coups de Cœur
+          </button>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
+          <span class="self-center font-bold text-stone-500 text-xs uppercase mr-1">Protéines:</span>
+          <button onclick="setProteinFilter('all')" class="prot-filter active-filter px-3 py-1.5 rounded-lg border font-medium">Toutes</button>
+          <button onclick="setProteinFilter('poulet')" class="prot-filter border border-stone-200 bg-stone-50 text-stone-700 px-3 py-1.5 rounded-lg">🐔 Volaille</button>
+          <button onclick="setProteinFilter('boeuf')" class="prot-filter border border-stone-200 bg-stone-50 text-stone-700 px-3 py-1.5 rounded-lg">🥩 Bœuf</button>
+          <button onclick="setProteinFilter('porc')" class="prot-filter border border-stone-200 bg-stone-50 text-stone-700 px-3 py-1.5 rounded-lg">🐷 Porc/Lardons</button>
+          <button onclick="setProteinFilter('poisson')" class="prot-filter border border-stone-200 bg-stone-50 text-stone-700 px-3 py-1.5 rounded-lg">🐟 Poisson</button>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs sm:text-sm pt-1 border-t border-stone-100">
+          <span class="self-center font-bold text-stone-500 text-xs uppercase mr-1">Appareil:</span>
+          <button onclick="setEquipFilter('all')" class="equip-filter active-filter px-3 py-1.5 rounded-lg border font-medium">Tous</button>
+          <button onclick="setEquipFilter('airfryer')" class="equip-filter border border-stone-200 bg-stone-50 text-stone-700 px-3 py-1.5 rounded-lg">⚡ Air Fryer</button>
+          <button onclick="setEquipFilter('cocotte')" class="equip-filter border border-stone-200 bg-stone-50 text-stone-700 px-3 py-1.5 rounded-lg">🍲 Cocotte</button>
+          <button onclick="setEquipFilter('plaques')" class="equip-filter border border-stone-200 bg-stone-50 text-stone-700 px-3 py-1.5 rounded-lg">🍳 Plaques</button>
+          <button onclick="setEquipFilter('croque')" class="equip-filter border border-stone-200 bg-stone-50 text-stone-700 px-3 py-1.5 rounded-lg">🥪 Croque/Grill</button>
+        </div>
+      </div>
+      <div class="flex items-center justify-between text-xs sm:text-sm text-stone-500 font-medium px-1">
+        <span id="recipesResultCount">Affichage de 100 recettes</span>
+        <button onclick="resetFilters()" class="text-brandAccent hover:underline text-xs">Réinitialiser</button>
+      </div>
+      <div id="recipeGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+    </section>
+
+    <section id="sec-planning" class="hidden space-y-6 print-title">
+      <div class="bg-white p-5 rounded-2xl border border-brandBorder shadow-sm">
+        <h2 class="text-lg font-bold text-brandDark">Votre Menu de la Semaine</h2>
+        <p class="text-sm text-stone-600 mt-1">Choisissez 4 ou 5 recettes pour couvrir tous vos dîners et vos gamelles du lendemain midi !</p>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-white p-4 rounded-2xl border shadow-sm text-center">
+          <p class="text-xs font-bold uppercase text-stone-400">Recettes retenues</p>
+          <p id="planCountBig" class="text-3xl font-extrabold text-brandPrimary mt-1">0</p>
+        </div>
+        <div class="bg-white p-4 rounded-2xl border shadow-sm text-center">
+          <p class="text-xs font-bold uppercase text-stone-400">Total Repas (Dîner+Midi)</p>
+          <p id="planPortionsBig" class="text-3xl font-extrabold text-brandAccent mt-1">0</p>
+        </div>
+        <div class="bg-white p-4 rounded-2xl border shadow-sm flex flex-col justify-center">
+          <button onclick="switchTab('shopping')" class="w-full bg-brandPrimary hover:bg-brandPrimaryHover text-white font-bold py-2.5 px-4 rounded-xl shadow">🛒 Voir les courses</button>
+          <button onclick="clearPlanning()" class="text-xs text-stone-400 hover:text-red-500 underline mt-2 text-center">Vider le menu</button>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl border shadow-sm p-4 sm:p-6">
+        <h3 class="text-base font-bold text-brandDark mb-4">📋 Recettes de votre semaine</h3>
+        <div id="planningListContainer" class="space-y-4"></div>
+      </div>
+    </section>
+
+    <section id="sec-shopping" class="hidden space-y-6 print-title">
+      <div class="bg-white p-5 rounded-2xl border shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-brandDark">Liste de Courses</h2>
+          <p class="text-sm text-stone-600">Générée automatiquement par rayons. Cochez en magasin !</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="window.print()" class="bg-stone-100 hover:bg-stone-200 px-3 py-2 rounded-xl text-xs font-bold border border-stone-200">🖨️ Imprimer</button>
+          <button onclick="copyShoppingList()" class="bg-stone-100 hover:bg-stone-200 px-3 py-2 rounded-xl text-xs font-bold border border-stone-200">📋 Copier</button>
+          <button onclick="resetShoppingCheckboxes()" class="bg-stone-100 hover:bg-stone-200 px-3 py-2 rounded-xl text-xs font-bold border border-stone-200">🔄 Décocher</button>
+        </div>
+      </div>
+      <div class="bg-white p-4 rounded-2xl border shadow-sm flex flex-col sm:flex-row gap-2 print:hidden">
+        <input type="text" id="customItemInput" placeholder="Ajouter (ex: Sopalin)..." class="flex-1 bg-stone-50 border rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brandPrimary">
+        <select id="customItemAisle" class="bg-stone-50 border rounded-xl px-3 py-2 text-xs focus:outline-none">
+          <option value="Boucherie / Poissonnerie">🥩 Boucherie/Poissons</option>
+          <option value="Légumes & Fruits">🥦 Légumes/Fruits</option>
+          <option value="Épicerie & Féculents">🌾 Épicerie</option>
+          <option value="Produits Frais & Crémerie">🧀 Frais/Crémerie</option>
+          <option value="Divers / Hors Cuisine" selected>🛍️ Divers</option>
+        </select>
+        <button onclick="addCustomShoppingItem()" class="bg-brandAccent hover:bg-brandAccentHover text-white font-bold px-4 py-2 rounded-xl text-sm">+ Ajouter</button>
+      </div>
+      <div id="shoppingAislesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-5"></div>
+    </section>
+
+    <section id="sec-dashboard" class="hidden space-y-6">
+      <div class="bg-white p-5 rounded-2xl border shadow-sm">
+        <h2 class="text-lg font-bold text-brandDark">Astuces Frigo & Congélateur</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="bg-amber-50 border border-amber-200 p-5 rounded-2xl space-y-2">
+          <div class="text-2xl">🧊</div><h4 class="font-bold text-amber-900">Conservation</h4>
+          <p class="text-xs text-stone-700">Plats conservés 3 à 4 jours max dans des boîtes hermétiques en verre au frigo (2°C-4°C). Sinon, congelez-les !</p>
+        </div>
+        <div class="bg-emerald-50 border border-emerald-200 p-5 rounded-2xl space-y-2">
+          <div class="text-2xl">🍱</div><h4 class="font-bold text-emerald-900">Micro-ondes</h4>
+          <p class="text-xs text-stone-700">Entre-ouvrez le couvercle. Ajoutez un filet d'eau avant de chauffer pour que la viande ne dessèche pas.</p>
+        </div>
+        <div class="bg-sky-50 border border-sky-200 p-5 rounded-2xl space-y-2">
+          <div class="text-2xl">⚡</div><h4 class="font-bold text-sky-900">Le Air Fryer</h4>
+          <p class="text-xs text-stone-700">Parfait pour dorer les viandes et gratiner sans allumer de grand four, indispensable pour les plats croustillants !</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="recipeModal" class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+      <div class="p-5 bg-stone-50 border-b flex items-start justify-between gap-3 shrink-0">
+        <div>
+          <div class="flex items-center gap-2 mb-1" id="modalBadges"></div>
+          <h3 id="modalTitle" class="text-xl font-bold text-brandDark">Titre Recette</h3>
+        </div>
+        <button onclick="closeModal()" class="text-stone-400 hover:text-stone-700 text-2xl font-bold p-1 rounded-lg">✕</button>
+      </div>
+      <div class="p-6 overflow-y-auto space-y-6 text-sm">
+        <div class="grid grid-cols-3 gap-3 bg-brandCardMuted p-3.5 rounded-2xl text-center text-xs font-semibold">
+          <div>⏱️ <span id="modalPrepTime"></span></div>
+          <div>🔥 <span id="modalCookTime"></span></div>
+          <div>👨‍🍳 <span id="modalEquipText"></span></div>
+        </div>
+        <div>
+          <h4 class="font-bold text-brandDark text-base mb-2">🥕 Ingrédients (4 portions)</h4>
+          <ul id="modalIngredientsList" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-stone-700 font-medium"></ul>
+        </div>
+        <div>
+          <h4 class="font-bold text-brandDark text-base mb-2">👨‍🍳 Étapes</h4>
+          <ol id="modalStepsList" class="space-y-2.5 text-stone-700 list-decimal list-inside"></ol>
+        </div>
+        <div class="bg-amber-50 border border-amber-200 p-4 rounded-2xl text-xs text-amber-900">
+          <p class="font-bold">💡 Astuce Gamelle :</p>
+          <p id="modalGamelleTip" class="text-stone-700 mt-1"></p>
+        </div>
+      </div>
+      <div class="p-4 bg-stone-50 border-t flex justify-between items-center shrink-0">
+        <button onclick="closeModal()" class="px-4 py-2 text-stone-600 font-semibold text-xs rounded-xl hover:bg-stone-200">Fermer</button>
+        <button id="modalActionBtn" onclick="" class="bg-brandPrimary hover:bg-brandPrimaryHover text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow">+ Ajouter au menu</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // FULL 100 RECIPES DATABASE (GUARANTEED NO SYNTAX ERRORS)
+    const recipesData = [
+      { id: 1, title: "Poulet Basquaise express", prot: "poulet", equip: "cocotte", prep: "15 min", cook: "20 min", ingredients: [{name:"Cuisses de poulet",qty:"4 pièces",aisle:"Boucherie / Poissonnerie"},{name:"Poivrons tricolores",qty:"3 pièces",aisle:"Légumes & Fruits"},{name:"Tomates concassées",qty:"400g",aisle:"Épicerie & Féculents"},{name:"Oignon & ail",qty:"1 oignon, 2 gousses",aisle:"Légumes & Fruits"},{name:"Riz basmati",qty:"240g",aisle:"Épicerie & Féculents"}], steps: ["Faire revenir l'oignon, l'ail et les poivrons dans la cocotte.","Dorer le poulet.","Verser la tomate, saler, poivrer. Cuire 20 min sous pression.","Servir avec le riz."], gamelleTip: "Mélanger le riz avec la sauce pour garder le poulet bien moelleux." },
+      { id: 2, title: "Curry de poulet au lait de coco", prot: "poulet", equip: "plaques", prep: "10 min", cook: "15 min", ingredients: [{name:"Blanc de poulet",qty:"600g",aisle:"Boucherie / Poissonnerie"},{name:"Carottes",qty:"3 pièces",aisle:"Légumes & Fruits"},{name:"Lait de coco",qty:"400ml",aisle:"Épicerie & Féculents"},{name:"Pâte de curry doux",qty:"2 c.à.s",aisle:"Épicerie & Féculents"},{name:"Ciboulette",qty:"1 botte",aisle:"Légumes & Fruits"},{name:"Riz thaï",qty:"240g",aisle:"Épicerie & Féculents"}], steps: ["Faire revenir le poulet et les carottes à la poêle.","Ajouter la pâte de curry puis mouiller au lait de coco.","Laisser mijoter à feu doux 12 minutes.","Parsemer de ciboulette."], gamelleTip: "Le lait de coco se conserve parfaitement." },
+      { id: 3, title: "Poulet Teriyaki & Brocolis", prot: "poulet", equip: "plaques", prep: "10 min", cook: "12 min", ingredients: [{name:"Dés de poulet",qty:"600g",aisle:"Boucherie / Poissonnerie"},{name:"Brocolis",qty:"400g",aisle:"Légumes & Fruits"},{name:"Sauce Soja & Miel",qty:"4 c.à.s soja, 2 miel",aisle:"Épicerie & Féculents"},{name:"Graines de sésame",qty:"2 c.à.s",aisle:"Épicerie & Féculents"},{name:"Nouilles asiatiques",qty:"200g",aisle:"Épicerie & Féculents"}], steps: ["Cuire les brocolis 6 min à l'eau.","Dorer le poulet, ajouter le soja et le miel pour laquer.","Incorporer les brocolis et les nouilles précuites.","Saupoudrer de sésame."], gamelleTip: "Plat asiatique gourmand idéal pour le midi." },
+      { id: 4, title: "Aiguillettes panées croustillantes", prot: "poulet", equip: "airfryer", prep: "10 min", cook: "12 min", ingredients: [{name:"Aiguillettes de poulet",qty:"600g",aisle:"Boucherie / Poissonnerie"},{name:"Chapelure",qty:"100g",aisle:"Épicerie & Féculents"},{name:"Œuf",qty:"1 gros",aisle:"Produits Frais & Crémerie"},{name:"Patates douces (purée)",qty:"2 grosses",aisle:"Légumes & Fruits"},{name:"Haricots verts",qty:"400g",aisle:"Légumes & Fruits"}], steps: ["Tremper les aiguillettes dans l'œuf puis la chapelure.","Air Fryer 12 min à 190°C.","Servir avec la purée et les haricots."], gamelleTip: "Laisser les aiguillettes au-dessus de la purée dans la boîte." },
+      { id: 5, title: "Risotto au poulet et courgettes", prot: "poulet", equip: "plaques", prep: "10 min", cook: "20 min", ingredients: [{name:"Riz Arborio",qty:"250g",aisle:"Épicerie & Féculents"},{name:"Dés de poulet",qty:"500g",aisle:"Boucherie / Poissonnerie"},{name:"Courgettes en dés",qty:"2 moyennes",aisle:"Légumes & Fruits"},{name:"Bouillon volaille",qty:"750ml",aisle:"Épicerie & Féculents"},{name:"Parmesan",qty:"80g",aisle:"Produits Frais & Crémerie"}], steps: ["Dorer le poulet à la poêle et réserver.","Nacrer le riz, mouiller au bouillon chaud louche par louche.","Incorporer les courgettes et le poulet.","Lier au parmesan."], gamelleTip: "Ajouter une cuillère d'eau avant le micro-ondes." },
+      { id: 6, title: "Blancs de poulet farcis mozza-tomates", prot: "poulet", equip: "airfryer", prep: "10 min", cook: "18 min", ingredients: [{name:"Blancs de poulet",qty:"4 pièces",aisle:"Boucherie / Poissonnerie"},{name:"Mozzarella",qty:"1 boule",aisle:"Produits Frais & Crémerie"},{name:"Tomates séchées",qty:"8 morceaux",aisle:"Épicerie & Féculents"},{name:"Jambon cru",qty:"8 tranches",aisle:"Boucherie / Poissonnerie"},{name:"Tagliatelles",qty:"250g",aisle:"Épicerie & Féculents"}], steps: ["Fendre les blancs en deux.","Garnir de mozzarella et tomates, enrouler de jambon cru.","Cuire à l'Air Fryer 18 min à 180°C.","Accompagner de tagliatelles."], gamelleTip: "La mozza fondante va enrober les pâtes." },
+      { id: 7, title: "Tajine de poulet aux citrons confits", prot: "poulet", equip: "cocotte", prep: "15 min", cook: "25 min", ingredients: [{name:"Cuisse de poulet",qty:"4 pièces",aisle:"Boucherie / Poissonnerie"},{name:"Carottes & courgettes",qty:"3 carottes, 2 courg.",aisle:"Légumes & Fruits"},{name:"Olives & Citron confit",qty:"100g olives, 1 citron",aisle:"Légumes & Fruits"},{name:"Semoule",qty:"250g",aisle:"Épicerie & Féculents"}], steps: ["Saisir poulet et légumes avec ras-el-hanout.","Ajouter citron confit, olives et 20cl d'eau.","Cuire 25 min sous pression.","Servir avec semoule."], gamelleTip: "La viande reste ultra tendre, idéal réchauffé." },
+      { id: 8, title: "Dinde à la normande", prot: "poulet", equip: "plaques", prep: "10 min", cook: "15 min", ingredients: [{name:"Émincé de dinde",qty:"600g",aisle:"Boucherie / Poissonnerie"},{name:"Champignons de Paris",qty:"400g",aisle:"Légumes & Fruits"},{name:"Crème fraîche",qty:"200g",aisle:"Produits Frais & Crémerie"},{name:"Pâtes fraîches",qty:"300g",aisle:"Produits Frais & Crémerie"}], steps: ["Sauter les champignons.","Ajouter la dinde et dorer.","Verser la crème et laisser frémir.","Mélanger avec les pâtes."], gamelleTip: "La sauce à la crème s'imprègne dans les pâtes." },
+      { id: 9, title: "Boulettes de volaille à l'italienne", prot: "poulet", equip: "airfryer", prep: "15 min", cook: "12 min", ingredients: [{name:"Haché de poulet",qty:"500g",aisle:"Boucherie / Poissonnerie"},{name:"Sauce tomate",qty:"400g",aisle:"Épicerie & Féculents"},{name:"Spaghettis",qty:"250g",aisle:"Épicerie & Féculents"},{name:"Parmesan",qty:"50g",aisle:"Produits Frais & Crémerie"}], steps: ["Former des boulettes avec poulet et parmesan.","Dorer à l'Air Fryer 12 min à 190°C.","Plonger dans la sauce chaude. Servir sur spaghettis."], gamelleTip: "Très facile à manger au bureau." },
+      { id: 10, title: "Poulet rôti, patates & légumes", prot: "poulet", equip: "airfryer", prep: "10 min", cook: "25 min", ingredients: [{name:"Cuisses de poulet",qty:"4",aisle:"Boucherie / Poissonnerie"},{name:"Pommes de terre",qty:"500g",aisle:"Légumes & Fruits"},{name:"Courgettes",qty:"2",aisle:"Légumes & Fruits"}], steps: ["Couper légumes en dés, assaisonner.","Placer le poulet sur les légumes dans l'Air Fryer.","Cuire 25 min à 190°C."], gamelleTip: "Repas tout-en-un très pratique." },
+      { id: 11, title: "Gratin de macaronis au poulet", prot: "poulet", equip: "plaques", prep: "15 min", cook: "10 min", ingredients: [{name:"Macaronis",qty:"300g",aisle:"Épicerie & Féculents"},{name:"Poulet émincé",qty:"400g",aisle:"Boucherie / Poissonnerie"},{name:"Béchamel",qty:"300ml",aisle:"Produits Frais & Crémerie"},{name:"Emmental râpé",qty:"150g",aisle:"Produits Frais & Crémerie"}], steps: ["Cuire macaronis.","Mélanger pâtes, poulet et béchamel.","Recouvrir d'emmental et gratiner au grill 8 min."], gamelleTip: "Gratine parfaitement au grill du micro-ondes." },
+      { id: 12, title: "Wok de poulet cajou", prot: "poulet", equip: "plaques", prep: "12 min", cook: "10 min", ingredients: [{name:"Poulet émincé",qty:"600g",aisle:"Boucherie / Poissonnerie"},{name:"Légumes croquants",qty:"300g",aisle:"Légumes & Fruits"},{name:"Noix de cajou",qty:"80g",aisle:"Épicerie & Féculents"},{name:"Sauce soja",qty:"3 c.à.s",aisle:"Épicerie & Féculents"},{name:"Riz",qty:"240g",aisle:"Épicerie & Féculents"}], steps: ["Saisir poulet vif au wok.","Ajouter légumes.","Déglacer soja, ajouter cajou. Servir avec riz."], gamelleTip: "Les légumes gardent leur texture croquante." },
+      { id: 13, title: "Hachis Parmentier poêlé", prot: "boeuf", equip: "plaques", prep: "15 min", cook: "15 min", ingredients: [{name:"Bœuf haché",qty:"500g",aisle:"Boucherie / Poissonnerie"},{name:"Purée",qty:"1kg",aisle:"Légumes & Fruits"},{name:"Oignon",qty:"1",aisle:"Légumes & Fruits"},{name:"Comté",qty:"100g",aisle:"Produits Frais & Crémerie"}], steps: ["Revenir le bœuf et l'oignon.","Étaler la viande au fond de la poêle, couvrir de purée et comté.","Couvrir 5 min à feu doux."], gamelleTip: "Un classique inratable qui réchauffe très vite." },
+      { id: 14, title: "Chili con carne généreux", prot: "boeuf", equip: "cocotte", prep: "10 min", cook: "20 min", ingredients: [{name:"Bœuf haché",qty:"500g",aisle:"Boucherie / Poissonnerie"},{name:"Haricots rouges",qty:"400g",aisle:"Épicerie & Féculents"},{name:"Maïs",qty:"1 boîte",aisle:"Épicerie & Féculents"},{name:"Purée tomates",qty:"400g",aisle:"Épicerie & Féculents"}], steps: ["Dorer la viande.","Ajouter tomates, haricots, maïs, épices.","Cuire 15 min sous pression. Servir avec riz."], gamelleTip: "Encore meilleur réchauffé le lendemain !" },
+      { id: 15, title: "One-Pot Pâtes façon Lasagne", prot: "boeuf", equip: "plaques", prep: "10 min", cook: "15 min", ingredients: [{name:"Bœuf haché",qty:"400g",aisle:"Boucherie / Poissonnerie"},{name:"Sauce Bolognaise",qty:"500g",aisle:"Épicerie & Féculents"},{name:"Pâtes",qty:"300g",aisle:"Épicerie & Féculents"},{name:"Mozzarella",qty:"150g",aisle:"Produits Frais & Crémerie"}], steps: ["Cuire le bœuf à la sauteuse.","Verser sauce, pâtes crues et eau.","Cuire 12 min. Parsemer de mozza."], gamelleTip: "Le goût des lasagnes sans le four !" },
+      { id: 16, title: "Bœuf aux oignons asiatique", prot: "boeuf", equip: "plaques", prep: "10 min", cook: "8 min", ingredients: [{name:"Bœuf émincé",qty:"500g",aisle:"Boucherie / Poissonnerie"},{name:"Oignons jaunes",qty:"3",aisle:"Légumes & Fruits"},{name:"Sauce Soja",qty:"4 c.à.s",aisle:"Épicerie & Féculents"},{name:"Riz",qty:"240g",aisle:"Épicerie & Féculents"}], steps: ["Faire fondre les oignons.","Saisir le bœuf 2 min vif.","Déglacer au soja, servir sur riz."], gamelleTip: "Garde sa tendreté et ses sucs." },
+      { id: 17, title: "Boulettes suédoises", prot: "boeuf", equip: "plaques", prep: "15 min", cook: "15 min", ingredients: [{name:"Boulettes bœuf",qty:"500g",aisle:"Boucherie / Poissonnerie"},{name:"Bouillon",qty:"250ml",aisle:"Épicerie & Féculents"},{name:"Crème",qty:"150ml",aisle:"Produits Frais & Crémerie"},{name:"Purée",qty:"800g",aisle:"Légumes & Fruits"}], steps: ["Saisir boulettes.","Verser bouillon, crème, moutarde. Réduire 8 min.","Dresser avec purée."], gamelleTip: "Le roi du réconfort au bureau." },
+      { id: 18, title: "Bœuf bourguignon express", prot: "boeuf", equip: "cocotte", prep: "15 min", cook: "35 min", ingredients: [{name:"Bœuf à mijoter",qty:"700g",aisle:"Boucherie / Poissonnerie"},{name:"Lardons",qty:"150g",aisle:"Boucherie / Poissonnerie"},{name:"Carottes",qty:"4",aisle:"Légumes & Fruits"},{name:"Vin rouge",qty:"250ml",aisle:"Épicerie & Féculents"},{name:"Pommes de terre",qty:"500g",aisle:"Légumes & Fruits"}], steps: ["Faire revenir viande et lardons.","Ajouter carottes, vin, eau.","Cuire 35 min sous pression."], gamelleTip: "La viande devient fondante." },
+      { id: 19, title: "Blanquette de veau crème", prot: "boeuf", equip: "cocotte", prep: "15 min", cook: "30 min", ingredients: [{name:"Veau",qty:"600g",aisle:"Boucherie / Poissonnerie"},{name:"Carottes/Champis",qty:"350g",aisle:"Légumes & Fruits"},{name:"Crème",qty:"100g",aisle:"Produits Frais & Crémerie"},{name:"Riz",qty:"240g",aisle:"Épicerie & Féculents"}], steps: ["Placer veau et légumes dans l'eau.","Cuire 30 min sous pression.","Lier à la crème. Servir avec riz."], gamelleTip: "Sauce parfaite pour imbiber le riz." },
+      { id: 20, title: "Sauté de veau Marengo", prot: "boeuf", equip: "cocotte", prep: "15 min", cook: "25 min", ingredients: [{name:"Veau",qty:"600g",aisle:"Boucherie / Poissonnerie"},{name:"Tomates",qty:"300g",aisle:"Épicerie & Féculents"},{name:"Olives noires",qty:"50g",aisle:"Épicerie & Féculents"},{name:"Tagliatelles",qty:"300g",aisle:"Épicerie & Féculents"}], steps: ["Saisir veau.","Déglacer, ajouter tomates et olives.","Cuire 25 min. Servir avec pâtes."], gamelleTip: "Sauce parfumée, évite le dessèchement." },
+      { id: 21, title: "Moussaka déconstruite poêlée", prot: "boeuf", equip: "airfryer", prep: "15 min", cook: "15 min", ingredients: [{name:"Bœuf haché",qty:"400g",aisle:"Boucherie / Poissonnerie"},{name:"Aubergines",qty:"2",aisle:"Légumes & Fruits"},{name:"Coulis",qty:"300g",aisle:"Épicerie & Féculents"},{name:"Béchamel",qty:"150ml",aisle:"Produits Frais & Crémerie"}], steps: ["Rôtir aubergines à l'Air Fryer 12 min.","Saisir viande et coulis à la poêle.","Assembler viande, aubergines et béchamel."], gamelleTip: "Aubergines sans baigner dans l'huile." },
+      { id: 22, title: "Nouilles Udon bœuf", prot: "boeuf", equip: "plaques", prep: "10 min", cook: "8 min", ingredients: [{name:"Bœuf émincé",qty:"400g",aisle:"Boucherie / Poissonnerie"},{name:"Nouilles Udon",qty:"400g",aisle:"Épicerie & Féculents"},{name:"Légumes",qty:"300g",aisle:"Légumes & Fruits"},{name:"Teriyaki",qty:"4 c.à.s",aisle:"Épicerie & Féculents"}], steps: ["Sauter légumes 3 min.","Ajouter le bœuf 2 min.","Ajouter nouilles et teriyaki. Sauter 2 min."], gamelleTip: "Nouilles moelleuses au micro-ondes." },
+      { id: 23, title: "Steaks sauce poivre frites", prot: "boeuf", equip: "airfryer", prep: "10 min", cook: "15 min", ingredients: [{name:"Steaks",qty:"4",aisle:"Boucherie / Poissonnerie"},{name:"Frites",qty:"800g",aisle:"Légumes & Fruits"},{name:"Crème/Poivre",qty:"150ml",aisle:"Produits Frais & Crémerie"}], steps: ["Frites à l'Air Fryer (18 min).","Cuire steaks à la poêle.","Créer sauce dans les sucs."], gamelleTip: "Sauce séparée si possible." },
+      { id: 24, title: "Poivrons farcis au bœuf", prot: "boeuf", equip: "airfryer", prep: "10 min", cook: "18 min", ingredients: [{name:"Poivrons",qty:"4",aisle:"Légumes & Fruits"},{name:"Bœuf haché",qty:"400g",aisle:"Boucherie / Poissonnerie"},{name:"Riz cuit",qty:"200g",aisle:"Épicerie & Féculents"}], steps: ["Évider légumes.","Mélanger bœuf cru et riz.","Farcir. Air Fryer 18 min à 180°C."], gamelleTip: "Plat complet parfait en boîte." },
+      { id: 25, title: "Filet mignon moutarde champis", prot: "porc", equip: "cocotte", prep: "10 min", cook: "15 min", ingredients: [{name:"Filet mignon",qty:"600g",aisle:"Boucherie / Poissonnerie"},{name:"Champignons",qty:"300g",aisle:"Légumes & Fruits"},{name:"Moutarde",qty:"2 c.à.s",aisle:"Épicerie & Féculents"},{name:"Crème",qty:"150g",aisle:"Produits Frais & Crémerie"},{name:"Riz",qty:"240g",aisle:"Épicerie & Féculents"}], steps: ["Dorer médaillons de porc dans cocotte.","Ajouter champis et moutarde délayée.","Cuire 15 min sous pression. Ajouter crème."], gamelleTip: "Extrêmement tendre et juteux." },
+      { id: 26, title: "Rouelle porc fondante carottes", prot: "porc", equip: "cocotte", prep: "10 min", cook: "35 min", ingredients: [{name:"Rouelle de porc",qty:"800g",aisle:"Boucherie / Poissonnerie"},{name:"Carottes",qty:"5",aisle:"Légumes & Fruits"},{name:"Miel",qty:"1 c.à.s",aisle:"Épicerie & Féculents"},{name:"Grenailles",qty:"400g",aisle:"Légumes & Fruits"}], steps: ["Dorer rouelle cocotte.","Mettre légumes, miel, eau.","Cuire 35 min sous pression."], gamelleTip: "Effilocher la viande dans son jus." },
+      { id: 27, title: "Lardons & Lentilles mijotées", prot: "porc", equip: "cocotte", prep: "10 min", cook: "20 min", ingredients: [{name:"Lardons épais",qty:"250g",aisle:"Boucherie / Poissonnerie"},{name:"Lentilles vertes",qty:"250g",aisle:"Épicerie & Féculents"},{name:"Carottes/Oignons",qty:"3",aisle:"Légumes & Fruits"},{name:"Bouillon",qty:"600ml",aisle:"Épicerie & Féculents"}], steps: ["Dorer lardons.","Ajouter lentilles, légumes, bouillon.","Cuire 20 min sous pression."], gamelleTip: "Lentilles idéales à réchauffer." },
+      { id: 28, title: "Sauté de porc caramel", prot: "porc", equip: "plaques", prep: "10 min", cook: "15 min", ingredients: [{name:"Échine cubes",qty:"600g",aisle:"Boucherie / Poissonnerie"},{name:"Sucre",qty:"3 c.à.s",aisle:"Épicerie & Féculents"},{name:"Sauce soja",qty:"3 c.à.s",aisle:"Épicerie & Féculents"},{name:"Riz",qty:"240g",aisle:"Épicerie & Féculents"}], steps: ["Faire caramel à la poêle.","Enrober viande.","Déglacer sauce soja. Mijoter 12 min. Servir riz."], gamelleTip: "La sauce enrobe divinement le riz." },
+      { id: 29, title: "Omelette paysanne", prot: "porc", equip: "plaques", prep: "10 min", cook: "10 min", ingredients: [{name:"Œufs",qty:"8",aisle:"Produits Frais & Crémerie"},{name:"Lardons",qty:"150g",aisle:"Boucherie / Poissonnerie"},{name:"Pommes de terre",qty:"300g",aisle:"Légumes & Fruits"},{name:"Fromage",qty:"80g",aisle:"Produits Frais & Crémerie"}], steps: ["Rissoler lardons, patates.","Verser œufs battus.","Couvrir poêle, cuire 10 min doux."], gamelleTip: "Super chaud ou froid." },
+      { id: 30, title: "Tartiflette poêlée minute", prot: "porc", equip: "plaques", prep: "10 min", cook: "15 min", ingredients: [{name:"Patates",qty:"600g",aisle:"Légumes & Fruits"},{name:"Lardons",qty:"200g",aisle:"Boucherie / Poissonnerie"},{name:"Reblochon",qty:"1/2",aisle:"Produits Frais & Crémerie"}], steps: ["Sauter patates, lardons, oignon.","Poser reblochon au-dessus.","Couvrir 5 min doux."], gamelleTip: "Succès garanti au micro-ondes." },
+      { id: 31, title: "Pâtes Carbonara", prot: "porc", equip: "plaques", prep: "10 min", cook: "10 min", ingredients: [{name:"Pancetta/Lardons",qty:"200g",aisle:"Boucherie / Poissonnerie"},{name:"Jaunes d'œufs",qty:"4",aisle:"Produits Frais & Crémerie"},{name:"Parmesan",qty:"80g",aisle:"Produits Frais & Crémerie"},{name:"Spaghettis",qty:"300g",aisle:"Épicerie & Féculents"}], steps: ["Dorer viande à sec.","Mélanger jaunes et parmesan.","Mélanger pâtes chaudes, viande, et lier avec mélange œufs/eau de cuisson."], gamelleTip: "Ajouter filet d'eau avant micro-ondes (500W)." },
+      { id: 32, title: "Joues de porc cidre", prot: "porc", equip: "cocotte", prep: "10 min", cook: "35 min", ingredients: [{name:"Joues de porc",qty:"600g",aisle:"Boucherie / Poissonnerie"},{name:"Cidre",qty:"300ml",aisle:"Épicerie & Féculents"},{name:"Pommes",qty:"2",aisle:"Légumes & Fruits"},{name:"Champignons",qty:"200g",aisle:"Légumes & Fruits"}], steps: ["Revenir viande.","Mouiller cidre, ajouter champignons.","Cuire 35 min pression. Poêler pommes à côté."], gamelleTip: "Viande la plus fondante." },
+      { id: 33, title: "Riz sauté cantonais", prot: "porc", equip: "plaques", prep: "10 min", cook: "10 min", ingredients: [{name:"Riz froid",qty:"400g",aisle:"Épicerie & Féculents"},{name:"Dés jambon",qty:"200g",aisle:"Boucherie / Poissonnerie"},{name:"Petits pois",qty:"150g",aisle:"Légumes & Fruits"},{name:"Œufs",qty:"2",aisle:"Produits Frais & Crémerie"},{name:"Soja",qty:"2 c.à.s",aisle:"Épicerie & Féculents"}], steps: ["Faire fine omelette, lanières.","Sauter riz, pois, jambon.","Ajouter soja, omelette."], gamelleTip: "Réchauffe très uniformément." },
+      { id: 34, title: "Dés de poulet & légumes rôtis", prot: "poulet", equip: "airfryer", prep: "10 min", cook: "18 min", ingredients: [{name:"Dés poulet rôtis",qty:"300g",aisle:"Boucherie / Poissonnerie"},{name:"Patates douces",qty:"2",aisle:"Légumes & Fruits"},{name:"Poivrons",qty:"1",aisle:"Légumes & Fruits"},{name:"Épices Cajun",qty:"1 c.à.s",aisle:"Épicerie & Féculents"}], steps: ["Couper légumes.","Mélanger avec huile et épices.","Air Fryer 15 min 190°C, ajouter poulet 3 min."], gamelleTip: "Repas complet très coloré." },
+      { id: 35, title: "Cabillaud croûte chorizo", prot: "poisson", equip: "airfryer", prep: "10 min", cook: "10 min", ingredients: [{name:"Cabillaud",qty:"4 pavés",aisle:"Boucherie / Poissonnerie"},{name:"Chorizo",qty:"60g",aisle:"Boucherie / Poissonnerie"},{name:"Chapelure",qty:"30g",aisle:"Épicerie & Féculents"},{name:"Poireaux",qty:"3",aisle:"Légumes & Fruits"}], steps: ["Mixer chorizo/chapelure.","Déposer sur poisson.","Air Fryer 10 min 180°C.","Fondue poireaux à la poêle."], gamelleTip: "Jus chorizo parfume poireaux." },
+      { id: 36, title: "Saumon rôti érable moutarde", prot: "poisson", equip: "airfryer", prep: "5 min", cook: "10 min", ingredients: [{name:"Saumon",qty:"4 pavés",aisle:"Boucherie / Poissonnerie"},{name:"Sirop érable",qty:"2 c.à.s",aisle:"Épicerie & Féculents"},{name:"Moutarde",qty:"1 c.à.s",aisle:"Épicerie & Féculents"},{name:"Quinoa",qty:"200g",aisle:"Épicerie & Féculents"}], steps: ["Badigeonner saumon mélange sirop/moutarde.","Air Fryer 10 min 180°C.","Servir avec quinoa."], gamelleTip: "Saumon reste fondant." },
+      { id: 37, title: "Curry crevettes coco", prot: "poisson", equip: "plaques", prep: "10 min", cook: "10 min", ingredients: [{name:"Crevettes",qty:"500g",aisle:"Boucherie / Poissonnerie"},{name:"Lait coco",qty:"400ml",aisle:"Épicerie & Féculents"},{name:"Poivron",qty:"1",aisle:"Légumes & Fruits"},{name:"Curry",qty:"1 c.à.s",aisle:"Épicerie & Féculents"},{name:"Riz",qty:"240g",aisle:"Épicerie & Féculents"}], steps: ["Sauter poivron 5 min.","Ajouter crevettes et curry.","Lait coco, frémir 5 min. Servir sur riz."], gamelleTip: "Ultra rapide et délicieux lendemain." },
+      { id: 38, title: "Gratin poisson poireaux", prot: "poisson", equip: "plaques", prep: "15 min", cook: "10 min", ingredients: [{name:"Poisson blanc",qty:"500g",aisle:"Boucherie / Poissonnerie"},{name:"Poireaux",qty:"3",aisle:"Légumes & Fruits"},{name:"Béchamel",qty:"250ml",aisle:"Produits Frais & Crémerie"},{name:"Fromage",qty:"80g",aisle:"Produits Frais & Crémerie"}], steps: ["Cuire poireaux, poser poisson dessus 5 min.","Mélanger béchamel.","Gratiner grill."], gamelleTip: "Plat réconfortant et sain." },
+      { id: 39, title: "Tagliatelles saumon fumé", prot: "poisson", equip: "plaques", prep: "10 min", cook: "10 min", ingredients: [{name:"Saumon fumé",qty:"200g",aisle:"Boucherie / Poissonnerie"},{name:"Tagliatelles",qty:"300g",aisle:"Produits Frais & Crémerie"},{name:"Crème",qty:"200ml",aisle:"Produits Frais & Crémerie"},{name:"Citron",qty:"1",aisle:"Légumes & Fruits"}], steps: ["Cuire pâtes.","Chauffer crème citron à la poêle.","Mélanger pâtes et saumon hors feu."], gamelleTip: "Filet citron frais avant déguster." },
+      { id: 40, title: "Parmentier mer express", prot: "poisson", equip: "plaques", prep: "15 min", cook: "10 min", ingredients: [{name:"Poisson/Saumon",qty:"500g",aisle:"Boucherie / Poissonnerie"},{name:"Purée",qty:"800g",aisle:"Légumes & Fruits"},{name:"Echalotes",qty:"2",aisle:"Légumes & Fruits"},{name:"Chapelure",qty:"30g",aisle:"Épicerie & Féculents"}], steps: ["Pocher poisson 5 min, effilocher avec échalotes.","Ramequins : poisson puis purée.","Dorer 5 min grill."], gamelleTip: "Version légère et raffinée." },
+      { id: 41, title: "Risotto crevettes pois", prot: "poisson", equip: "plaques", prep: "10 min", cook: "20 min", ingredients: [{name:"Riz Arborio",qty:"250g",aisle:"Épicerie & Féculents"},{name:"Crevettes",qty:"300g",aisle:"Boucherie / Poissonnerie"},{name:"Petits pois",qty:"150g",aisle:"Légumes & Fruits"},{name:"Bouillon",qty:"750ml",aisle:"Épicerie & Féculents"},{name:"Parmesan",qty:"60g",aisle:"Produits Frais & Crémerie"}], steps: ["Cuire risotto avec bouillon progressivement.","Ajouter pois et crevettes 5 min avant fin.","Lier parmesan."], gamelleTip: "Très coloré." },
+      { id: 42, title: "Saumon papillote micro-ondes", prot: "poisson", equip: "plaques", prep: "10 min", cook: "5 min", ingredients: [{name:"Saumon",qty:"4 pavés",aisle:"Boucherie / Poissonnerie"},{name:"Julienne légumes",qty:"300g",aisle:"Légumes & Fruits"},{name:"Huile/Citron",qty:"2 c.à.s",aisle:"Légumes & Fruits"}], steps: ["Julienne et saumon en papillotes.","Arroser huile citron.","Micro-ondes 4-5 min max."], gamelleTip: "Vapeur express." },
+      { id: 43, title: "Riz sauté thon tomate", prot: "poisson", equip: "plaques", prep: "5 min", cook: "10 min", ingredients: [{name:"Thon boîte",qty:"2",aisle:"Épicerie & Féculents"},{name:"Tomates concassées",qty:"400g",aisle:"Épicerie & Féculents"},{name:"Riz",qty:"240g",aisle:"Épicerie & Féculents"},{name:"Herbes",qty:"1 c.à.s",aisle:"Épicerie & Féculents"}], steps: ["Réduire tomates herbes à la poêle.","Ajouter thon et riz.","Mélanger 5 min."], gamelleTip: "Repas placard par excellence." },
+      { id: 44, title: "Croquettes poisson Air Fryer", prot: "poisson", equip: "airfryer", prep: "15 min", cook: "12 min", ingredients: [{name:"Poisson blanc",qty:"400g",aisle:"Boucherie / Poissonnerie"},{name:"Purée froide",qty:"200g",aisle:"Légumes & Fruits"},{name:"Chapelure/Œuf",qty:"1 œuf, 80g chap.",aisle:"Épicerie & Féculents"}], steps: ["Mixer poisson purée ciboulette.","Galettes dans œuf puis chapelure.","Air Fryer 12 min 190°C."], gamelleTip: "Doré dehors moelleux dedans." },
+      { id: 45, title: "Cake thon tomates olives", prot: "poisson", equip: "airfryer", prep: "10 min", cook: "25 min", ingredients: [{name:"Thon boîte",qty:"200g",aisle:"Épicerie & Féculents"},{name:"Farine/Œufs",qty:"150g, 3 œufs",aisle:"Épicerie & Féculents"},{name:"Lait/Huile",qty:"10cl/5cl",aisle:"Produits Frais & Crémerie"},{name:"Olives",qty:"50g",aisle:"Épicerie & Féculents"}], steps: ["Mélanger œufs, farine, levure, lait, huile.","Incorporer thon olives.","Moule Air Fryer 25 min 160°C."], gamelleTip: "Excellente tenue." },
+      { id: 46, title: "Quiche sans pâte lardons", prot: "porc", equip: "airfryer", prep: "10 min", cook: "20 min", ingredients: [{name:"Lardons",qty:"150g",aisle:"Boucherie / Poissonnerie"},{name:"Œufs/Crème/Lait",qty:"3, 20cl, 10cl",aisle:"Produits Frais & Crémerie"},{name:"Farine",qty:"50g",aisle:"Épicerie & Féculents"},{name:"Comté",qty:"100g",aisle:"Produits Frais & Crémerie"}], steps: ["Dorer lardons.","Fouetter tout le reste.","Plat Air Fryer avec lardons. 20 min 170°C."], gamelleTip: "Texture parfaite sans pâte." },
+      { id: 47, title: "Mini-cakes jambon comté", prot: "porc", equip: "airfryer", prep: "10 min", cook: "15 min", ingredients: [{name:"Dés jambon",qty:"150g",aisle:"Boucherie / Poissonnerie"},{name:"Comté",qty:"100g",aisle:"Produits Frais & Crémerie"},{name:"Base cake",qty:"Base",aisle:"Épicerie & Féculents"}], steps: ["Préparer pâte cake.","Moules silicone.","Air Fryer 15 min 160°C."], gamelleTip: "Portions pratiques." },
+      { id: 48, title: "Gaufres patates douces bacon", prot: "porc", equip: "croque", prep: "15 min", cook: "10 min", ingredients: [{name:"Patates douces",qty:"400g",aisle:"Légumes & Fruits"},{name:"Œufs/Farine",qty:"2, 2 c.à.s",aisle:"Produits Frais & Crémerie"},{name:"Bacon",qty:"8",aisle:"Boucherie / Poissonnerie"}], steps: ["Mélanger patates râpées œufs farine.","Cuire gaufrier 8 min.","Servir bacon."], gamelleTip: "Ludique légumes." },
+      { id: 49, title: "Croque-poulet montagnard", prot: "poulet", equip: "croque", prep: "10 min", cook: "5 min", ingredients: [{name:"Pain mie",qty:"8",aisle:"Épicerie & Féculents"},{name:"Poulet cuit",qty:"200g",aisle:"Boucherie / Poissonnerie"},{name:"Raclette",qty:"8",aisle:"Produits Frais & Crémerie"},{name:"Oignons confits",qty:"2 c.à.s",aisle:"Épicerie & Féculents"}], steps: ["Garnir pain avec poulet fromage oignons.","Croque-monsieur 5 min."], gamelleTip: "Soir flemme parfait." },
+      { id: 50, title: "Quesadillas bœuf Cheddar", prot: "boeuf", equip: "croque", prep: "10 min", cook: "5 min", ingredients: [{name:"Tortillas",qty:"4",aisle:"Épicerie & Féculents"},{name:"Bœuf haché cuit",qty:"250g",aisle:"Boucherie / Poissonnerie"},{name:"Cheddar",qty:"100g",aisle:"Produits Frais & Crémerie"}], steps: ["Garnir moitié tortilla bœuf cheddar, plier.","Toaster 5 min croque-monsieur."], gamelleTip: "Croustillant." },
+      { id: 51, title: "Cordon Bleu fausse friture", prot: "poulet", equip: "airfryer", prep: "15 min", cook: "14 min", ingredients: [{name:"Escalopes",qty:"4",aisle:"Boucherie / Poissonnerie"},{name:"Jambon/Emmental",qty:"2/4 tranches",aisle:"Boucherie / Poissonnerie"},{name:"Chapelure/Œuf",qty:"100g, 1",aisle:"Épicerie & Féculents"}], steps: ["Placer jambon fromage sur escalope, plier.","Paner œuf chapelure.","Air Fryer 14 min 190°C."], gamelleTip: "Dore super bien." },
+      { id: 52, title: "Cuisses laquées soja-miel", prot: "poulet", equip: "airfryer", prep: "5 min", cook: "25 min", ingredients: [{name:"Cuisses poulet",qty:"4",aisle:"Boucherie / Poissonnerie"},{name:"Soja/Miel",qty:"3 c.à.s/2 c.à.s",aisle:"Épicerie & Féculents"},{name:"Gingembre",qty:"1 c.à.t",aisle:"Épicerie & Féculents"}], steps: ["Badigeonner marinade.","Air Fryer 25 min 180°C.","Peau croustillante."], gamelleTip: "Sucré-salé irrésistible." },
+      { id: 53, title: "Raxo de poulet galicien", prot: "poulet", equip: "airfryer", prep: "10 min", cook: "10 min", ingredients: [{name:"Blancs poulet",qty:"600g",aisle:"Boucherie / Poissonnerie"},{name:"Ail/Paprika",qty:"3, 1 c.à.s",aisle:"Légumes & Fruits"},{name:"Frites légumes",qty:"500g",aisle:"Légumes & Fruits"}], steps: ["Mariner poulet ail paprika.","Air Fryer 10 min 200°C.","Servir frites."], gamelleTip: "Flash juteux." },
+      { id: 54, title: "Boulettes sur lit de légumes", prot: "boeuf", equip: "airfryer", prep: "10 min", cook: "20 min", ingredients: [{name:"Boulettes bœuf",qty:"500g",aisle:"Boucherie / Poissonnerie"},{name:"Courgettes/Poivrons",qty:"2/1",aisle:"Légumes & Fruits"}], steps: ["Mettre légumes assaisonnés au fond Air Fryer.","Poser boulettes.","Cuire 20 min 180°C."], gamelleTip: "Jus aromatise légumes." },
+      { id: 55, title: "Confit de canard grenailles", prot: "poulet", equip: "airfryer", prep: "5 min", cook: "15 min", ingredients: [{name:"Cuisses canard",qty:"4",aisle:"Boucherie / Poissonnerie"},{name:"Grenailles",qty:"600g",aisle:"Légumes & Fruits"},{name:"Graisse canard",qty:"1 c.à.s",aisle:"Épicerie & Féculents"}], steps: ["Grenailles + graisse Air Fryer 10 min.","Poser cuisses dessus.","12 min 200°C."], gamelleTip: "Traiteur rapide." },
+      { id: 56, title: "Pilons poulet Tex-Mex", prot: "poulet", equip: "airfryer", prep: "5 min", cook: "20 min", ingredients: [{name:"Pilons poulet",qty:"8",aisle:"Boucherie / Poissonnerie"},{name:"Épices TexMex",qty:"1 sachet",aisle:"Épicerie & Féculents"}], steps: ["Masser pilons huile épices.","Air Fryer 20 min 190°C."], gamelleTip: "Chaud ou froid." },
+      { id: 57, title: "Faux-filet frites douces", prot: "boeuf", equip: "airfryer", prep: "10 min", cook: "12 min", ingredients: [{name:"Faux-filet",qty:"400g",aisle:"Boucherie / Poissonnerie"},{name:"Frites patate douce",qty:"400g",aisle:"Légumes & Fruits"}], steps: ["Frites Air Fryer 12 min 200°C.","Saisir viande 2 min face poêle."], gamelleTip: "Émincer pour gamelle." },
+      { id: 58, title: "Poivrons farcis au bœuf", prot: "boeuf", equip: "airfryer", prep: "10 min", cook: "16 min", ingredients: [{name:"Poivrons",qty:"2",aisle:"Légumes & Fruits"},{name:"Bœuf haché",qty:"400g",aisle:"Boucherie / Poissonnerie"}], steps: ["Remplir poivrons viande hachée.","Air Fryer 16 min 180°C."], gamelleTip: "Présentation boîte." },
+      { id: 59, title: "Brochettes porc curry yaourt", prot: "porc", equip: "airfryer", prep: "15 min", cook: "12 min", ingredients: [{name:"Porc dés",qty:"500g",aisle:"Boucherie / Poissonnerie"},{name:"Yaourt/Curry",qty:"1, 1 c.à.s",aisle:"Produits Frais & Crémerie"},{name:"Pics",qty:"4",aisle:"Divers / Hors Cuisine"}], steps: ["Mariner porc 15 min.","Piquer.","Air Fryer 12 min 190°C."], gamelleTip: "Ultra tendre." },
+      { id: 60, title: "Boulettes bœuf menthe", prot: "boeuf", equip: "airfryer", prep: "10 min", cook: "10 min", ingredients: [{name:"Bœuf haché",qty:"500g",aisle:"Boucherie / Poissonnerie"},{name:"Menthe",qty:"1/2",aisle:"Légumes & Fruits"},{name:"Cumin/Ail",qty:"1 c.à.t, 1",aisle:"Épicerie & Féculents"}], steps: ["Mélanger viande herbes épices.","Former boules.","Air Fryer 10 min 200°C."], gamelleTip: "Touche fraîcheur." },
+      { id: 61, title: "Magret canard miel", prot: "poulet", equip: "airfryer", prep: "5 min", cook: "12 min", ingredients: [{name:"Magret canard",qty:"400g",aisle:"Boucherie / Poissonnerie"},{name:"Miel/Balsamique",qty:"1 c.à.s",aisle:"Épicerie & Féculents"}], steps: ["Quadriller peau.","Air Fryer 8 min peau puis 4 min retourné.","Napper sauce."], gamelleTip: "Conserve jus." },
+      { id: 62, title: "Papillote cabillaud pesto", prot: "poisson", equip: "airfryer", prep: "5 min", cook: "12 min", ingredients: [{name:"Cabillaud",qty:"4",aisle:"Boucherie / Poissonnerie"},{name:"Pesto vert",qty:"1 pot",aisle:"Épicerie & Féculents"},{name:"Tomates cerises",qty:"200g",aisle:"Légumes & Fruits"}], steps: ["Papillote poisson tomates.","Tartiner pesto.","Air Fryer 12 min 180°C."], gamelleTip: "Jus savoureux." },
+      { id: 63, title: "Truite amandes", prot: "poisson", equip: "airfryer", prep: "5 min", cook: "10 min", ingredients: [{name:"Truite",qty:"4",aisle:"Boucherie / Poissonnerie"},{name:"Amandes",qty:"50g",aisle:"Épicerie & Féculents"},{name:"Citron/Beurre",qty:"1, 20g",aisle:"Légumes & Fruits"}], steps: ["Déposer amandes beurre sur truite.","Air Fryer 10 min 180°C."], gamelleTip: "Apporte croquant." },
+      { id: 64, title: "Accras morue express", prot: "poisson", equip: "airfryer", prep: "15 min", cook: "10 min", ingredients: [{name:"Morue",qty:"300g",aisle:"Boucherie / Poissonnerie"},{name:"Farine/Piment",qty:"150g",aisle:"Épicerie & Féculents"}], steps: ["Pâte eau farine morue.","Boules.","Air Fryer 10 min 190°C."], gamelleTip: "Sans bain huile." },
+      { id: 65, title: "Empanadas bœuf", prot: "boeuf", equip: "airfryer", prep: "15 min", cook: "12 min", ingredients: [{name:"Pâte brisée",qty:"2",aisle:"Produits Frais & Crémerie"},{name:"Bœuf oignons cuit",qty:"300g",aisle:"Boucherie / Poissonnerie"},{name:"Œuf",qty:"1",aisle:"Produits Frais & Crémerie"}], steps: ["Disques pâte.","Garnir plier.","Dorer œuf Air Fryer 12 min 180°C."], gamelleTip: "Zéro fuite." },
+      { id: 66, title: "Salade Piémontaise (sans four)", prot: "porc", equip: "plaques", prep: "15 min", cook: "10 min", ingredients: [{name:"Pommes de terre",qty:"800g",aisle:"Légumes & Fruits"},{name:"Dés de jambon",qty:"200g",aisle:"Boucherie / Poissonnerie"},{name:"Oeufs durs",qty:"4 pièces",aisle:"Produits Frais & Crémerie"},{name:"Mayonnaise & Cornichons",qty:"3 c.à.s",aisle:"Épicerie & Féculents"}], steps: ["Cuire les pommes de terre et les oeufs à l'eau.","Couper le tout en dés.","Mélanger avec le jambon, les cornichons et la mayonnaise."], gamelleTip: "Se déguste bien frais, pas besoin de micro-ondes !" },
+      { id: 67, title: "Salade de blé au thon & tomates", prot: "poisson", equip: "plaques", prep: "10 min", cook: "10 min", ingredients: [{name:"Blé (Ebly)",qty:"250g",aisle:"Épicerie & Féculents"},{name:"Thon nature",qty:"2 boîtes",aisle:"Épicerie & Féculents"},{name:"Tomates",qty:"3 pièces",aisle:"Légumes & Fruits"},{name:"Vinaigrette",qty:"3 c.à.s",aisle:"Épicerie & Féculents"}], steps: ["Cuire le blé à l'eau bouillante 10 min.","Couper les tomates en petits dés.","Mélanger le blé refroidi avec le thon émietté, les tomates et la vinaigrette."], gamelleTip: "Parfait pour un repas froid et complet au bureau." },
+      { id: 68, title: "Bouillon asiatique aux crevettes", prot: "poisson", equip: "plaques", prep: "10 min", cook: "5 min", ingredients: [{name:"Crevettes décortiquées",qty:"400g",aisle:"Boucherie / Poissonnerie"},{name:"Nouilles de riz",qty:"200g",aisle:"Épicerie & Féculents"},{name:"Bouillon de légumes",qty:"1L",aisle:"Épicerie & Féculents"},{name:"Sauce soja & Gingembre",qty:"3 c.à.s",aisle:"Épicerie & Féculents"}], steps: ["Faire chauffer le bouillon avec la sauce soja et le gingembre.","Ajouter les nouilles et les crevettes, cuire 3 min.","Répartir dans les boîtes."], gamelleTip: "Le bouillon va infuser les nouilles. Réchauffez bien chaud !" },
+      { id: 69, title: "Tortellini sauce tomates & olives", prot: "porc", equip: "plaques", prep: "5 min", cook: "5 min", ingredients: [{name:"Tortellini (viande/fromage)",qty:"500g",aisle:"Produits Frais & Crémerie"},{name:"Sauce tomate",qty:"400g",aisle:"Épicerie & Féculents"},{name:"Olives noires",qty:"100g",aisle:"Épicerie & Féculents"}], steps: ["Cuire les tortellini 2 min dans l'eau bouillante.","Égoutter, mélanger avec la sauce tomate et les olives coupées en deux.","Faire mijoter 2 min pour enrober."], gamelleTip: "Ajoutez un peu d'eau avant de mettre au micro-ondes." },
+      { id: 70, title: "Gnocchis au coco, pesto & chorizo", prot: "porc", equip: "plaques", prep: "10 min", cook: "10 min", ingredients: [{name:"Gnocchis à poêler",qty:"500g",aisle:"Produits Frais & Crémerie"},{name:"Chorizo en dés",qty:"100g",aisle:"Boucherie / Poissonnerie"},{name:"Lait de coco",qty:"20cl",aisle:"Épicerie & Féculents"},{name:"Pesto vert",qty:"2 c.à.s",aisle:"Épicerie & Féculents"}], steps: ["Poêler les gnocchis 5 min avec les dés de chorizo.","Mélanger le lait de coco et le pesto, verser sur les gnocchis.","Laisser épaissir 2 min à feu doux."], gamelleTip: "La sauce coco-pesto reste super onctueuse." },
+      { id: 71, title: "Potatoes, Boulettes de bœuf & Cheddar", prot: "boeuf", equip: "airfryer", prep: "10 min", cook: "15 min", ingredients: [{name:"Potatoes (surgelées)",qty:"500g",aisle:"Légumes & Fruits"},{name:"Boulettes de bœuf",qty:"400g",aisle:"Boucherie / Poissonnerie"},{name:"Cheddar râpé",qty:"100g",aisle:"Produits Frais & Crémerie"}], steps: ["Cuire les potatoes et les boulettes ensemble à l'Air Fryer 15 min à 190°C.","À la sortie, saupoudrer de cheddar qui va fondre sur le chaud.","Répartir dans les gamelles."], gamelleTip: "Le cheddar va gratiner la viande à la réchauffe." },
+      { id: 72, title: "Pommes de terre farcies au bœuf", prot: "boeuf", equip: "airfryer", prep: "15 min", cook: "25 min", ingredients: [{name:"Grosses pommes de terre",qty:"4 pièces",aisle:"Légumes & Fruits"},{name:"Bœuf haché",qty:"300g",aisle:"Boucherie / Poissonnerie"},{name:"Crème fraîche",qty:"2 c.à.s",aisle:"Produits Frais & Crémerie"},{name:"Gruyère",qty:"50g",aisle:"Produits Frais & Crémerie"}], steps: ["Précuire les pommes de terre au micro-ondes 10 min.","Les creuser, mélanger la chair avec le bœuf cuit et la crème.","Farcir, parsemer de gruyère et dorer à l'Air Fryer 10 min."], gamelleTip: "Repas complet et ultra consistant." },
+      { id: 73, title: "Pâtes au Chorizo, Aubergine & Crème", prot: "porc", equip: "plaques", prep: "10 min", cook: "15 min", ingredients: [{name:"Pâtes (Penne)",qty:"300g",aisle:"Épicerie & Féculents"},{name:"Aubergine",qty:"1 pièce",aisle:"Légumes & Fruits"},{name:"Chorizo fort",qty:"100g",aisle:"Boucherie / Poissonnerie"},{name:"Crème liquide",qty:"20cl",aisle:"Produits Frais & Crémerie"}], steps: ["Cuire les pâtes.","Faire sauter l'aubergine en dés avec le chorizo en rondelles.","Mélanger avec les pâtes et lier avec la crème."], gamelleTip: "L'aubergine agit comme une éponge pour le jus du chorizo." },
+      { id: 74, title: "Escalopes gratinées Gruyère & Jambon", prot: "poulet", equip: "plaques", prep: "10 min", cook: "12 min", ingredients: [{name:"Escalopes de dinde/poulet",qty:"4 pièces",aisle:"Boucherie / Poissonnerie"},{name:"Jambon blanc",qty:"4 tranches",aisle:"Boucherie / Poissonnerie"},{name:"Gruyère en tranches",qty:"4 tranches",aisle:"Produits Frais & Crémerie"}], steps: ["Faire dorer les escalopes à la poêle.","En fin de cuisson, déposer une tranche de jambon et de gruyère sur chacune.","Couvrir 2 min pour faire fondre le fromage. Servir avec du riz."], gamelleTip: "Idéal avec des pâtes fraîches à côté." },
+      { id: 75, title: "Nouilles instantanées twistées au poulet", prot: "poulet", equip: "plaques", prep: "5 min", cook: "8 min", ingredients: [{name:"Nouilles instantanées",qty:"3 paquets",aisle:"Épicerie & Féculents"},{name:"Dés de poulet rôtis",qty:"300g",aisle:"Boucherie / Poissonnerie"},{name:"Légumes pour wok",qty:"300g",aisle:"Légumes & Fruits"},{name:"Sauce soja",qty:"3 c.à.s",aisle:"Épicerie & Féculents"}], steps: ["Faire sauter les légumes et le poulet à la poêle.","Ajouter les nouilles réhydratées.","Faire sauter avec la sauce soja 2 minutes."], gamelleTip: "Conserve une bonne texture grâce aux légumes sautés." },
+      { id: 76, title: "Sandwichs Américains", prot: "boeuf", equip: "plaques", prep: "10 min", cook: "10 min", ingredients: [{name:"Baguettes précuites",qty:"2 pièces",aisle:"Épicerie & Féculents"},{name:"Steaks hachés",qty:"4 pièces",aisle:"Boucherie / Poissonnerie"},{name:"Frites (Air Fryer)",qty:"400g",aisle:"Légumes & Fruits"},{name:"Sauce Burger ou Mayo",qty:"4 c.à.s",aisle:"Épicerie & Féculents"}], steps: ["Cuire les frites à l'Air Fryer et les steaks à la poêle.","Couper les baguettes, tartiner de sauce.","Garnir avec le steak coupé en morceaux et les frites !"], gamelleTip: "Pour la gamelle, mettez la sauce à part et réchauffez doucement." },
+      { id: 77, title: "Pain Pita Bœuf & Cheddar", prot: "boeuf", equip: "croque", prep: "10 min", cook: "8 min", ingredients: [{name:"Pains Pita",qty:"4 pièces",aisle:"Épicerie & Féculents"},{name:"Bœuf haché cuit",qty:"300g",aisle:"Boucherie / Poissonnerie"},{name:"Cheddar râpé",qty:"100g",aisle:"Produits Frais & Crémerie"},{name:"Oignons frits",qty:"2 c.à.s",aisle:"Épicerie & Féculents"}], steps: ["Ouvrir les pains pita en deux.","Farcir avec le bœuf, le cheddar et les oignons frits.","Passer à l'appareil à croque-monsieur 4 min."], gamelleTip: "Un hot-pocket maison délicieux." },
+      { id: 78, title: "Galette façon Burger (Poêle)", prot: "boeuf", equip: "plaques", prep: "10 min", cook: "10 min", ingredients: [{name:"Galettes de blé noir",qty:"4 pièces",aisle:"Produits Frais & Crémerie"},{name:"Bœuf haché",qty:"400g",aisle:"Boucherie / Poissonnerie"},{name:"Tomate & Oignon rouge",qty:"1 de chaque",aisle:"Légumes & Fruits"},{name:"Fromage à burger",qty:"4 tranches",aisle:"Produits Frais & Crémerie"}], steps: ["Cuire la viande hachée avec l'oignon.","Dans la poêle, poser une galette, la viande, le fromage et des rondelles de tomate.","Plier en carré et laisser dorer 2 min."], gamelleTip: "La galette se maintient très bien au micro-ondes." },
+      { id: 79, title: "Yakitoris bœuf fromage express", prot: "boeuf", equip: "plaques", prep: "15 min", cook: "8 min", ingredients: [{name:"Carpaccio de bœuf",qty:"200g",aisle:"Boucherie / Poissonnerie"},{name:"Gouda ou Emmental en bloc",qty:"200g",aisle:"Produits Frais & Crémerie"},{name:"Sauce Teriyaki",qty:"4 c.à.s",aisle:"Épicerie & Féculents"}], steps: ["Couper le fromage en gros bâtonnets.","Enrouler chaque bâtonnet de 2 tranches de carpaccio.","Saisir à la poêle très chaude 2 min et déglacer au Teriyaki. Servir avec du riz."], gamelleTip: "Gourmandise ultime, ne réchauffez pas trop fort (600W max)." },
+      { id: 80, title: "Courgettes farcies au porc haché & riz", prot: "porc", equip: "airfryer", prep: "10 min", cook: "20 min", ingredients: [{name:"Courgettes rondes",qty:"4 pièces",aisle:"Légumes & Fruits"},{name:"Porc haché / Chair",qty:"300g",aisle:"Boucherie / Poissonnerie"},{name:"Riz cuit",qty:"200g",aisle:"Épicerie & Féculents"},{name:"Crème fraîche",qty:"2 c.à.s",aisle:"Produits Frais & Crémerie"}], steps: ["Creuser les courgettes et hacher la chair.","Poêler la chair avec la viande et le riz, lier à la crème.","Farcir les courgettes et cuire 20 min à l'Air Fryer à 180°C."], gamelleTip: "La courgette protège le riz du dessèchement." },
+      { id: 81, title: "Blanquette de dinde minute", prot: "poulet", equip: "cocotte", prep: "10 min", cook: "20 min", ingredients: [{name:"Blancs de dinde en cubes",qty:"600g",aisle:"Boucherie / Poissonnerie"},{name:"Carottes",qty:"3 pièces",aisle:"Légumes & Fruits"},{name:"Crème fraîche",qty:"150g",aisle:"Produits Frais & Crémerie"},{name:"Jus de citron",qty:"1 c.à.s",aisle:"Légumes & Fruits"}], steps: ["Dorer légèrement la dinde dans la cocotte.","Ajouter les carottes en rondelles et 2 verres d'eau. Cuire 15 min sous pression.","Lier la sauce avec la crème et le citron hors du feu."], gamelleTip: "Plus légère que le veau, parfaite pour le déjeuner." },
+      { id: 82, title: "Coquillettes & Bœuf façon bolognaise", prot: "boeuf", equip: "plaques", prep: "5 min", cook: "12 min", ingredients: [{name:"Coquillettes",qty:"300g",aisle:"Épicerie & Féculents"},{name:"Bœuf haché",qty:"400g",aisle:"Boucherie / Poissonnerie"},{name:"Sauce tomate",qty:"400g",aisle:"Épicerie & Féculents"},{name:"Gruyère râpé",qty:"100g",aisle:"Produits Frais & Crémerie"}], steps: ["Cuire les coquillettes.","Dans une sauteuse, dorer le bœuf et ajouter la sauce tomate.","Mélanger les pâtes, la sauce et saupoudrer de gruyère."], gamelleTip: "Le repas régressif parfait qui passe super bien réchauffé." },
+      { id: 83, title: "Volaille à la crème, soja & champignons", prot: "poulet", equip: "plaques", prep: "10 min", cook: "15 min", ingredients: [{name:"Blancs de poulet émincés",qty:"500g",aisle:"Boucherie / Poissonnerie"},{name:"Champignons frais",qty:"300g",aisle:"Légumes & Fruits"},{name:"Sauce soja",qty:"3 c.à.s",aisle:"Épicerie & Féculents"},{name:"Crème fraîche",qty:"20cl",aisle:"Produits Frais & Crémerie"}], steps: ["Dorer le poulet à la poêle.","Ajouter les champignons émincés pour qu'ils rendent leur eau.","Déglacer avec la sauce soja, verser la crème et laisser épaissir 5 minutes."], gamelleTip: "Le mariage sauce soja et crème donne un goût umami fabuleux." },
+      { id: 84, title: "Lasagnes express au Air Fryer", prot: "boeuf", equip: "airfryer", prep: "15 min", cook: "25 min", ingredients: [{name:"Bœuf haché",qty:"400g",aisle:"Boucherie / Poissonnerie"},{name:"Plaques de lasagne",qty:"1 paquet",aisle:"Produits Frais & Crémerie"},{name:"Sauce Tomate/Béchamel",qty:"1 pot chaque",aisle:"Épicerie & Féculents"},{name:"Gruyère râpé",qty:"100g",aisle:"Produits Frais & Crémerie"}], steps: ["Faire revenir la viande hachée.","Dans un moule, alterner: sauce, pâte, viande, béchamel.","Finir par le gruyère et cuire 25 min à 160°C dans l'Air Fryer."], gamelleTip: "Coupez les parts à l'avance, les lasagnes sont les reines du micro-ondes." },
+      { id: 85, title: "Fajitas Jambon & Gruyère", prot: "porc", equip: "plaques", prep: "10 min", cook: "10 min", ingredients: [{name:"Galettes Fajitas",qty:"8 pièces",aisle:"Épicerie & Féculents"},{name:"Jambon blanc",qty:"4 tranches",aisle:"Boucherie / Poissonnerie"},{name:"Sauce tomate",qty:"200g",aisle:"Épicerie & Féculents"},{name:"Gruyère râpé",qty:"150g",aisle:"Produits Frais & Crémerie"}], steps: ["Couper le jambon en lanières.","Réchauffer les tortillas.","Garnir de sauce, jambon, gruyère, puis rouler."], gamelleTip: "Roulez-les bien serrées dans la boîte." },
+      { id: 86, title: "Le Vrai Croque-Monsieur", prot: "porc", equip: "croque", prep: "10 min", cook: "10 min", ingredients: [{name:"Pain de mie épais",qty:"8 tranches",aisle:"Épicerie & Féculents"},{name:"Jambon blanc",qty:"4 tranches",aisle:"Boucherie / Poissonnerie"},{name:"Béchamel",qty:"1 pot",aisle:"Produits Frais & Crémerie"},{name:"Emmental",qty:"150g",aisle:"Produits Frais & Crémerie"}], steps: ["Tartiner l'intérieur des pains de béchamel.","Ajouter jambon et emmental, refermer.","Cuire au croque-monsieur."], gamelleTip: "Gardera son moelleux grâce à la béchamel." },
+      { id: 87, title: "Poisson pané ultra-croustillant", prot: "poisson", equip: "airfryer", prep: "10 min", cook: "12 min", ingredients: [{name:"Filets de poisson blanc",qty:"4 pièces",aisle:"Boucherie / Poissonnerie"},{name:"Chapelure Panko",qty:"100g",aisle:"Épicerie & Féculents"},{name:"Œuf",qty:"1",aisle:"Produits Frais & Crémerie"},{name:"Riz ou Frites",qty:"400g",aisle:"Épicerie & Féculents"}], steps: ["Passer le poisson dans l'œuf puis chapelure.","Cuire au Air Fryer 12 min à 190°C.","Servir avec accompagnement."], gamelleTip: "Laissez le poisson sur le dessus." },
+      { id: 88, title: "Bruschettas Chèvre, Miel & Lardons", prot: "porc", equip: "airfryer", prep: "10 min", cook: "8 min", ingredients: [{name:"Grandes tranches de pain",qty:"4",aisle:"Épicerie & Féculents"},{name:"Bûche de chèvre",qty:"1",aisle:"Produits Frais & Crémerie"},{name:"Lardons",qty:"150g",aisle:"Boucherie / Poissonnerie"},{name:"Miel",qty:"2 c.à.s",aisle:"Épicerie & Féculents"}], steps: ["Précuire les lardons.","Disposer chèvre et lardons sur le pain.","Ajouter miel et toaster 8 min à 180°C."], gamelleTip: "Excellent tiède avec salade à part." },
+      { id: 89, title: "Bruschettas Pesto, Mozza & Jambon cru", prot: "porc", equip: "airfryer", prep: "10 min", cook: "8 min", ingredients: [{name:"Grandes tranches de pain",qty:"4",aisle:"Épicerie & Féculents"},{name:"Pesto vert",qty:"1 pot",aisle:"Épicerie & Féculents"},{name:"Mozzarella",qty:"2 boules",aisle:"Produits Frais & Crémerie"},{name:"Jambon cru",qty:"4 tranches",aisle:"Boucherie / Poissonnerie"}], steps: ["Tartiner pain de pesto.","Ajouter mozza, toaster 8 min 180°C.","Déposer jambon cru à la sortie."], gamelleTip: "Pesto s'imprègne dans la mie." },
+      { id: 90, title: "Gnocchis dorés Courgettes & Lardons", prot: "porc", equip: "plaques", prep: "10 min", cook: "15 min", ingredients: [{name:"Gnocchis à poêler",qty:"500g",aisle:"Produits Frais & Crémerie"},{name:"Courgettes",qty:"2",aisle:"Légumes & Fruits"},{name:"Lardons",qty:"150g",aisle:"Boucherie / Poissonnerie"},{name:"Crème liquide",qty:"15cl",aisle:"Produits Frais & Crémerie"}], steps: ["Sauter courgettes dés et lardons.","Dorer gnocchis à part.","Mélanger, verser crème et mijoter 2 min."], gamelleTip: "Restent bien moelleux en gamelle." },
+      { id: 91, title: "Gnocchis Pesto Rosso & Jambon Bayonne", prot: "porc", equip: "plaques", prep: "5 min", cook: "10 min", ingredients: [{name:"Gnocchis frais",qty:"500g",aisle:"Produits Frais & Crémerie"},{name:"Pesto Rosso",qty:"3 c.à.s",aisle:"Épicerie & Féculents"},{name:"Tomates séchées",qty:"8",aisle:"Épicerie & Féculents"},{name:"Jambon Bayonne",qty:"4 tranches",aisle:"Boucherie / Poissonnerie"}], steps: ["Cuire gnocchis eau.","Mélanger avec pesto rosso et tomates.","Dresser avec jambon effiloché."], gamelleTip: "Mélangez bien avant micro-ondes !" },
+      { id: 92, title: "Cuisses Poulet & Tagliatelles Basilic", prot: "poulet", equip: "airfryer", prep: "10 min", cook: "25 min", ingredients: [{name:"Cuisses de poulet",qty:"4",aisle:"Boucherie / Poissonnerie"},{name:"Tagliatelles",qty:"300g",aisle:"Produits Frais & Crémerie"},{name:"Pesto Basilic",qty:"3 c.à.s",aisle:"Épicerie & Féculents"}], steps: ["Cuire poulet Air Fryer 25 min 190°C.","Cuire pâtes.","Mélanger pâtes et pesto, servir avec poulet."], gamelleTip: "Désossez le poulet pour vos boîtes !" },
+      { id: 93, title: "Poulet Tikka Masala Express", prot: "poulet", equip: "plaques", prep: "10 min", cook: "15 min", ingredients: [{name:"Blancs de poulet en dés",qty:"600g",aisle:"Boucherie / Poissonnerie"},{name:"Lait de coco ou Crème",qty:"25cl",aisle:"Produits Frais & Crémerie"},{name:"Coulis de tomates",qty:"200g",aisle:"Épicerie & Féculents"},{name:"Épices Tikka Masala",qty:"2 c.à.s",aisle:"Épicerie & Féculents"},{name:"Riz basmati",qty:"250g",aisle:"Épicerie & Féculents"}], steps: ["Faire dorer le poulet à la poêle avec les épices.","Ajouter le coulis de tomates et le lait de coco.","Laisser mijoter à feu doux 10 min. Servir avec le riz cuit."], gamelleTip: "Le riz va s'imbiber de cette sauce onctueuse au micro-ondes (sans coriandre !)." },
+      { id: 94, title: "Salade de Pâtes Poulet Rôti & Pesto", prot: "poulet", equip: "plaques", prep: "10 min", cook: "10 min", ingredients: [{name:"Pâtes courtes",qty:"300g",aisle:"Épicerie & Féculents"},{name:"Restes de poulet rôti",qty:"200g",aisle:"Boucherie / Poissonnerie"},{name:"Pesto vert",qty:"3 c.à.s",aisle:"Épicerie & Féculents"},{name:"Tomates cerises",qty:"250g",aisle:"Légumes & Fruits"}], steps: ["Cuire les pâtes et les refroidir sous l'eau froide.","Mélanger avec le pesto, le poulet effiloché et les tomates cerises coupées en deux."], gamelleTip: "Idéal pour l'été, se mange froid." },
+      { id: 95, title: "Vrai Porc au Caramel Traditionnel", prot: "porc", equip: "plaques", prep: "10 min", cook: "20 min", ingredients: [{name:"Échine de porc",qty:"600g",aisle:"Boucherie / Poissonnerie"},{name:"Sucre en poudre",qty:"4 c.à.s",aisle:"Épicerie & Féculents"},{name:"Sauce Soja",qty:"4 c.à.s",aisle:"Épicerie & Féculents"},{name:"Riz Thaï",qty:"250g",aisle:"Épicerie & Féculents"}], steps: ["Faire fondre le sucre avec un peu d'eau pour obtenir un caramel blond.","Ajouter les morceaux de porc et bien enrober.","Déglacer avec la sauce soja et un verre d'eau, mijoter 15 min."], gamelleTip: "Sans ananas ! La sauce caramel devient sirupeuse avec le riz." },
+      { id: 96, title: "Burger Maison & Frites Air Fryer", prot: "boeuf", equip: "airfryer", prep: "10 min", cook: "15 min", ingredients: [{name:"Pains à Burger briochés",qty:"4 pièces",aisle:"Épicerie & Féculents"},{name:"Steaks hachés",qty:"4 pièces",aisle:"Boucherie / Poissonnerie"},{name:"Cheddar",qty:"4 tranches",aisle:"Produits Frais & Crémerie"},{name:"Frites fraîches ou surgelées",qty:"500g",aisle:"Légumes & Fruits"}], steps: ["Cuire les frites au Air Fryer (environ 15 min à 200°C).","À la poêle, cuire les steaks. Poser le cheddar sur le steak en fin de cuisson.","Toaster légèrement les pains et monter les burgers."], gamelleTip: "Gardez le burger démonté dans la boîte pour ne pas détremper le pain." },
+      { id: 97, title: "Tartiflette Forestière (Lardons Champis)", prot: "porc", equip: "plaques", prep: "10 min", cook: "20 min", ingredients: [{name:"Pommes de terre",qty:"800g",aisle:"Légumes & Fruits"},{name:"Lardons & Champignons",qty:"200g chaque",aisle:"Légumes & Fruits"},{name:"Reblochon",qty:"1 entier",aisle:"Produits Frais & Crémerie"},{name:"Crème fraîche",qty:"2 c.à.s",aisle:"Produits Frais & Crémerie"}], steps: ["Cuire les pommes de terre à l'eau ou vapeur.","Poêler les lardons et champignons.","Mélanger avec les pommes de terre, poser le reblochon coupé en deux dessus, couvrir 10 min."], gamelleTip: "Un réconfort absolu pour l'hiver au bureau." },
+      { id: 98, title: "Raclette Poêlée Express", prot: "porc", equip: "plaques", prep: "10 min", cook: "15 min", ingredients: [{name:"Pommes de terre grenailles",qty:"600g",aisle:"Légumes & Fruits"},{name:"Fromage à raclette",qty:"400g",aisle:"Produits Frais & Crémerie"},{name:"Jambon cru & blanc",qty:"4 tranches chaque",aisle:"Boucherie / Poissonnerie"}], steps: ["Cuire les grenailles et les couper en deux.","Dans une poêle, disposer les pommes de terre, recouvrir de tranches de raclette.","Couvrir à feu doux jusqu'à fonte. Servir avec la charcuterie froide."], gamelleTip: "Le goût de la raclette sans sortir l'appareil !" },
+      { id: 99, title: "Mijoté de Bœuf aux Légumes d'Hiver", prot: "boeuf", equip: "cocotte", prep: "15 min", cook: "45 min", ingredients: [{name:"Paleron ou Macreuse de Bœuf",qty:"600g",aisle:"Boucherie / Poissonnerie"},{name:"Carottes & Panais",qty:"3 de chaque",aisle:"Légumes & Fruits"},{name:"Bouillon de bœuf",qty:"50cl",aisle:"Épicerie & Féculents"},{name:"Pommes de terre",qty:"400g",aisle:"Légumes & Fruits"}], steps: ["Saisir la viande en cubes dans la cocotte.","Ajouter les légumes en gros morceaux et le bouillon.","Fermer la cocotte et cuire 45 min sous pression."], gamelleTip: "Un plat qui ne sèche jamais et se bonifie avec le temps." },
+      { id: 100, title: "Saumon & Fondue de Poireaux Crème", prot: "poisson", equip: "plaques", prep: "10 min", cook: "15 min", ingredients: [{name:"Pavés de saumon",qty:"4 pièces",aisle:"Boucherie / Poissonnerie"},{name:"Poireaux",qty:"4 pièces",aisle:"Légumes & Fruits"},{name:"Crème fraîche épaisse",qty:"20cl",aisle:"Produits Frais & Crémerie"},{name:"Riz blanc",qty:"200g",aisle:"Épicerie & Féculents"}], steps: ["Émincer finement les poireaux et les faire fondre à la poêle 10 min. Ajouter la crème.","Dans une autre poêle (ou Air Fryer), cuire le saumon.","Servir le saumon sur le lit de poireaux avec du riz."], gamelleTip: "Zéro endive ici, juste une délicieuse fondue de poireaux !" }
+    ];
+
+    // --- STATE MANAGEMENT ---
+    let selectedRecipeIds = JSON.parse(localStorage.getItem('gamelles_selected_ids')) || [84, 85, 90, 100];
+    let shoppingCheckedState = JSON.parse(localStorage.getItem('gamelles_shopping_checked')) || {};
+    let customShoppingItems = JSON.parse(localStorage.getItem('gamelles_custom_items')) || [];
+    let favoriteRecipeIds = JSON.parse(localStorage.getItem('gamelles_favorites')) || [];
+
+    let currentProtFilter = 'all';
+    let currentEquipFilter = 'all';
+    let showFavoritesOnly = false;
+
+    // --- STREAMING_CHUNK: Helpers for Badges ---
+    function getEquipBadge(equip) {
+      switch(equip) {
+        case 'airfryer': return '<span class="bg-amber-100 text-amber-800 text-[11px] font-bold px-2 py-0.5 rounded-md">⚡ Air Fryer</span>';
+        case 'cocotte': return '<span class="bg-emerald-100 text-emerald-800 text-[11px] font-bold px-2 py-0.5 rounded-md">🍲 Cocotte</span>';
+        case 'croque': return '<span class="bg-orange-100 text-orange-800 text-[11px] font-bold px-2 py-0.5 rounded-md">🥪 Croque/Grill</span>';
+        default: return '<span class="bg-blue-100 text-blue-800 text-[11px] font-bold px-2 py-0.5 rounded-md">🍳 Plaques/Poêle</span>';
+      }
+    }
+
+    function getProtBadge(prot) {
+      switch(prot) {
+        case 'poulet': return '<span class="bg-yellow-50 text-yellow-800 border border-yellow-200 text-[11px] font-bold px-2 py-0.5 rounded-md">🐔 Volaille</span>';
+        case 'boeuf': return '<span class="bg-red-50 text-red-800 border border-red-200 text-[11px] font-bold px-2 py-0.5 rounded-md">🥩 Bœuf/Veau</span>';
+        case 'porc': return '<span class="bg-pink-50 text-pink-800 border border-pink-200 text-[11px] font-bold px-2 py-0.5 rounded-md">🐷 Porc</span>';
+        default: return '<span class="bg-cyan-50 text-cyan-800 border border-cyan-200 text-[11px] font-bold px-2 py-0.5 rounded-md">🐟 Poisson</span>';
+      }
+    }
+
+    // --- STREAMING_CHUNK: Main Rendering Logic ---
+    function renderRecipes() {
+      const grid = document.getElementById('recipeGrid');
+      grid.innerHTML = '';
+
+      const query = document.getElementById('searchInput').value.toLowerCase().trim();
+
+      const filtered = recipesData.filter(r => {
+        const matchesProt = (currentProtFilter === 'all') || (r.prot === currentProtFilter);
+        const matchesEquip = (currentEquipFilter === 'all') || (r.equip === currentEquipFilter);
+        const matchesSearch = !query || r.title.toLowerCase().includes(query) || r.ingredients.some(i => i.name.toLowerCase().includes(query));
+        const matchesFav = showFavoritesOnly ? favoriteRecipeIds.includes(r.id) : true;
+
+        return matchesProt && matchesEquip && matchesSearch && matchesFav;
+      });
+
+      document.getElementById('recipesResultCount').innerText = `Affichage de ${filtered.length} / 100 recettes`;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-12 text-center bg-white rounded-2xl border border-dashed border-stone-300">
+            <p class="text-3xl mb-2">🔍</p><p class="text-base font-bold text-stone-700">Aucune recette ne correspond</p>
+          </div>`;
+        return;
+      }
+
+      filtered.forEach(recipe => {
+        const isSelected = selectedRecipeIds.includes(recipe.id);
+        const isFav = favoriteRecipeIds.includes(recipe.id);
+        
+        const card = document.createElement('div');
+        card.className = "bg-white rounded-2xl border border-brandBorder shadow-sm hover:shadow-md transition p-4 flex flex-col justify-between space-y-4 group relative";
+        
+        card.innerHTML = `
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5 flex-wrap">${getProtBadge(recipe.prot)} ${getEquipBadge(recipe.equip)}</div>
+              <div class="flex items-center gap-2">
+                <button onclick="toggleFavorite(${recipe.id}); event.stopPropagation();" class="text-lg hover:scale-110 transition">${isFav ? '❤️' : '🤍'}</button>
+                <span class="text-xs text-stone-400 font-bold">#${recipe.id}</span>
+              </div>
+            </div>
+            <h3 onclick="openModal(${recipe.id})" class="font-bold text-base text-brandDark group-hover:text-brandPrimary cursor-pointer line-clamp-1">${recipe.title}</h3>
+            <p class="text-xs text-stone-500 line-clamp-2"><strong>Ingrédients clés:</strong> ${recipe.ingredients.slice(0, 3).map(i => i.name).join(', ')}...</p>
+          </div>
+          <div class="pt-3 border-t border-stone-100 flex items-center justify-between text-xs">
+            <button onclick="openModal(${recipe.id})" class="text-stone-600 font-semibold">📖 Voir recette</button>
+            <button onclick="toggleSelectRecipe(${recipe.id})" class="${isSelected ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-brandPrimary hover:bg-brandPrimaryHover text-white'} font-bold px-3 py-1.5 rounded-xl transition">${isSelected ? '✔️ Au menu' : '+ Au menu'}</button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // --- STREAMING_CHUNK: Filtering Logic ---
+    function toggleFavFilter() {
+      showFavoritesOnly = !showFavoritesOnly;
+      const btn = document.getElementById('btn-fav-filter');
+      btn.className = showFavoritesOnly ? "active-filter bg-red-500 text-white px-4 py-2.5 rounded-xl transition text-sm font-semibold flex items-center gap-2 shrink-0" : "border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 px-4 py-2.5 rounded-xl transition text-sm font-semibold flex items-center gap-2 shrink-0";
+      btn.innerHTML = showFavoritesOnly ? "❤️ Voir toutes les recettes" : "🤍 Mes Coups de Cœur";
+      renderRecipes();
+    }
+
+    function toggleFavorite(id) {
+      if (favoriteRecipeIds.includes(id)) favoriteRecipeIds = favoriteRecipeIds.filter(fId => fId !== id);
+      else favoriteRecipeIds.push(id);
+      saveState(); renderRecipes();
+    }
+
+    function setProteinFilter(prot) {
+      currentProtFilter = prot;
+      document.querySelectorAll('.prot-filter').forEach(btn => {
+        btn.className = (btn.dataset.prot === prot) ? "prot-filter active-filter bg-brandPrimary text-white px-3 py-1.5 rounded-lg border font-medium" : "prot-filter border border-stone-200 bg-stone-50 text-stone-700 px-3 py-1.5 rounded-lg";
+      });
+      renderRecipes();
+    }
+
+    function setEquipFilter(equip) {
+      currentEquipFilter = equip;
+      document.querySelectorAll('.equip-filter').forEach(btn => {
+        btn.className = (btn.dataset.equip === equip) ? "equip-filter active-filter bg-brandPrimary text-white px-3 py-1.5 rounded-lg border font-medium" : "equip-filter border border-stone-200 bg-stone-50 text-stone-700 px-3 py-1.5 rounded-lg";
+      });
+      renderRecipes();
+    }
+
+    function applyFilters() { renderRecipes(); }
+    function resetFilters() { document.getElementById('searchInput').value = ''; showFavoritesOnly = false; setProteinFilter('all'); setEquipFilter('all'); }
+    function pickRandomRecipe() { const randomIndex = Math.floor(Math.random() * recipesData.length); openModal(recipesData[randomIndex].id); }
+
+    // --- STREAMING_CHUNK: Planning & Shopping Logic ---
+    function toggleSelectRecipe(id) {
+      if (selectedRecipeIds.includes(id)) selectedRecipeIds = selectedRecipeIds.filter(item => item !== id);
+      else selectedRecipeIds.push(id);
+      saveState(); updateAllViews();
+    }
+    function clearPlanning() { if (confirm("Voulez-vous réinitialiser votre menu ?")) { selectedRecipeIds = []; saveState(); updateAllViews(); } }
+
+    function renderPlanning() {
+      const container = document.getElementById('planningListContainer');
+      container.innerHTML = '';
+      const count = selectedRecipeIds.length;
+      document.getElementById('planCountBig').innerText = count; document.getElementById('planPortionsBig').innerText = count * 4;
+      document.getElementById('headerMenuCount').innerText = `${count} plat${count > 1 ? 's' : ''}`; document.getElementById('planningTabBadge').innerText = count;
+
+      if (count === 0) {
+        container.innerHTML = `<div class="py-12 text-center text-stone-500 space-y-3"><p class="text-4xl">🍽️</p><p class="font-bold text-brandDark">Votre planning est vide.</p></div>`;
+        return;
+      }
+      selectedRecipeIds.forEach((id, index) => {
+        const recipe = recipesData.find(r => r.id === id); if (!recipe) return;
+        const row = document.createElement('div'); row.className = "flex flex-col sm:flex-row sm:items-center justify-between bg-stone-50 p-4 rounded-xl border gap-3";
+        row.innerHTML = `<div class="flex items-center space-x-3"><span class="bg-brandAccent text-white font-bold text-xs w-7 h-7 rounded-full flex items-center justify-center">J${index + 1}</span><div><div class="flex gap-2 mb-0.5">${getProtBadge(recipe.prot)} ${getEquipBadge(recipe.equip)}</div><h4 class="font-bold text-sm cursor-pointer" onclick="openModal(${recipe.id})">${recipe.title}</h4></div></div><div class="flex gap-2"><button onclick="openModal(${recipe.id})" class="bg-white border px-3 py-1.5 rounded-lg text-xs">📖</button><button onclick="toggleSelectRecipe(${recipe.id})" class="bg-red-50 text-red-600 font-bold px-2.5 py-1.5 rounded-lg text-xs">✕ Retirer</button></div>`;
+        container.appendChild(row);
+      });
+    }
+
+    function renderShoppingList() {
+      const container = document.getElementById('shoppingAislesContainer'); container.innerHTML = '';
+      const aisles = { "Boucherie / Poissonnerie": [], "Légumes & Fruits": [], "Épicerie & Féculents": [], "Produits Frais & Crémerie": [], "Divers / Hors Cuisine": [] };
+      selectedRecipeIds.forEach(id => { const recipe = recipesData.find(r => r.id === id); if (recipe) recipe.ingredients.forEach(ing => aisles[ing.aisle].push({name:ing.name, qty:ing.qty, from:recipe.title})); });
+      customShoppingItems.forEach((c, idx) => aisles[c.aisle].push({name:c.name, qty:"Manuel", isCustom:true, customIdx:idx}));
+      let totalItems = 0; let totalChecked = 0;
+
+      Object.keys(aisles).forEach(aisleName => {
+        if (aisles[aisleName].length === 0) return;
+        const card = document.createElement('div'); card.className = "bg-white p-4 rounded-2xl border shadow-sm print:break-inside-avoid";
+        let html = `<h3 class="font-bold text-sm text-brandDark border-b pb-2 flex items-center justify-between"><span>${aisleName}</span><span class="text-xs bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full">${aisles[aisleName].length} art.</span></h3><ul class="space-y-2 text-xs mt-3">`;
+        aisles[aisleName].forEach(item => {
+          totalItems++; const key = `${aisleName}_${item.name}`.replace(/\s+/g, '_'); const isChecked = !!shoppingCheckedState[key]; if(isChecked) totalChecked++;
+          html += `<li class="flex items-start justify-between gap-2 p-1.5 rounded-lg ${isChecked ? 'bg-emerald-50/60 line-through text-stone-400' : ''}"><label class="flex flex-1 cursor-pointer"><input type="checkbox" onchange="toggleShoppingCheck('${key}')" ${isChecked ? 'checked' : ''} class="mt-0.5 mr-2 h-4 w-4 rounded"><div class="font-semibold">${item.name} <span class="text-stone-500 font-normal">(${item.qty})</span></div></label>${item.isCustom ? `<button onclick="removeCustomItem(${item.customIdx})" class="text-red-400">✕</button>` : ''}</li>`;
+        });
+        html += `</ul>`; card.innerHTML = html; container.appendChild(card);
+      });
+      document.getElementById('headerShoppingBadge').innerText = `${totalChecked}/${totalItems}`;
+    }
+
+    function toggleShoppingCheck(key) { shoppingCheckedState[key] = !shoppingCheckedState[key]; saveState(); renderShoppingList(); }
+    function resetShoppingCheckboxes() { shoppingCheckedState = {}; saveState(); renderShoppingList(); }
+    function addCustomShoppingItem() { const inp=document.getElementById('customItemInput'); if(!inp.value.trim()) return; customShoppingItems.push({name:inp.value.trim(), aisle:document.getElementById('customItemAisle').value}); inp.value=''; saveState(); renderShoppingList(); }
+    function removeCustomItem(idx) { customShoppingItems.splice(idx, 1); saveState(); renderShoppingList(); }
+
+    function copyShoppingList() { alert("Pour copier, surlignez simplement le texte ou utilisez le bouton Imprimer (puis Sauvegarder en PDF)."); }
+
+    // --- STREAMING_CHUNK: Modal Logic ---
+    function openModal(id) {
+      const recipe = recipesData.find(r => r.id === id); if (!recipe) return;
+      currentModalRecipeId = id;
+      document.getElementById('modalTitle').innerText = recipe.title; document.getElementById('modalPrepTime').innerText = recipe.prep; document.getElementById('modalCookTime').innerText = recipe.cook;
+      document.getElementById('modalBadges').innerHTML = `${getProtBadge(recipe.prot)} ${getEquipBadge(recipe.equip)}`;
+      document.getElementById('modalEquipText').innerText = recipe.equip === 'airfryer' ? 'Air Fryer' : (recipe.equip === 'cocotte' ? 'Cocotte' : (recipe.equip === 'croque' ? 'Croque/Gaufre' : 'Poêle/Plaques'));
+      
+      const ingUl = document.getElementById('modalIngredientsList'); ingUl.innerHTML = '';
+      recipe.ingredients.forEach(i => { ingUl.innerHTML += `<li class="bg-stone-50 p-2 rounded-xl border text-xs">🔹 <strong>${i.name}</strong> (${i.qty})</li>`; });
+      
+      const stepOl = document.getElementById('modalStepsList'); stepOl.innerHTML = '';
+      recipe.steps.forEach(s => { stepOl.innerHTML += `<li>${s}</li>`; });
+      
+      document.getElementById('modalGamelleTip').innerText = recipe.gamelleTip; updateModalBtnState();
+      document.getElementById('recipeModal').classList.remove('hidden');
+    }
+
+    function updateModalBtnState() {
+      const btn = document.getElementById('modalActionBtn'); const isSelected = selectedRecipeIds.includes(currentModalRecipeId);
+      btn.innerText = isSelected ? "✓ Au menu (Retirer)" : "+ Au menu";
+      btn.className = isSelected ? "bg-amber-600 text-white font-bold px-5 py-2.5 rounded-xl shadow" : "bg-brandPrimary text-white font-bold px-5 py-2.5 rounded-xl shadow";
+      btn.onclick = () => { toggleSelectRecipe(currentModalRecipeId); updateModalBtnState(); };
+    }
+    function closeModal() { document.getElementById('recipeModal').classList.add('hidden'); }
+
+    // --- STREAMING_CHUNK: Tabs & Init ---
+    function switchTab(tabId) {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('text-brandPrimary','border-brandPrimary','font-semibold'));
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.add('text-stone-500','border-transparent'));
+      const activeTab = document.getElementById(`tab-${tabId}`); activeTab.classList.remove('text-stone-500','border-transparent'); activeTab.classList.add('text-brandPrimary','border-brandPrimary','font-semibold');
+      ['recipes','planning','shopping','dashboard'].forEach(id => document.getElementById(`sec-${id}`).classList.add('hidden'));
+      document.getElementById(`sec-${tabId}`).classList.remove('hidden');
+      if (tabId === 'dashboard') renderCharts();
+    }
+    function saveState() { localStorage.setItem('gamelles_selected_ids', JSON.stringify(selectedRecipeIds)); localStorage.setItem('gamelles_shopping_checked', JSON.stringify(shoppingCheckedState)); localStorage.setItem('gamelles_custom_items', JSON.stringify(customShoppingItems)); localStorage.setItem('gamelles_favorites', JSON.stringify(favoriteRecipeIds)); }
+    function updateAllViews() { renderRecipes(); renderPlanning(); renderShoppingList(); }
+    window.addEventListener('DOMContentLoaded', updateAllViews);
+  </script>
+</body>
+</html>
