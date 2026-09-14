@@ -45,7 +45,7 @@
         <span class="text-3xl bg-amber-100 p-2 rounded-2xl">🍱</span>
         <div>
           <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-brandDark">Édition Gamelles</h1>
-          <p class="text-xs text-stone-500 font-medium">100 Recettes pour 2 personnes (Dîner + Gamelle = 4 portions)</p>
+          <p class="text-xs text-stone-500 font-medium">101 Recettes pour 2 personnes (Dîner + Gamelle = 4 portions)</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -58,7 +58,7 @@
       </div>
     </div>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1 sm:space-x-4 border-t border-stone-100 overflow-x-auto no-scrollbar text-sm font-medium">
-      <button id="tab-recipes" onclick="switchTab('recipes')" class="nav-tab text-brandPrimary border-b-2 border-brandPrimary py-2.5 px-3 whitespace-nowrap font-semibold">📖 Les 100 Recettes</button>
+      <button id="tab-recipes" onclick="switchTab('recipes')" class="nav-tab text-brandPrimary border-b-2 border-brandPrimary py-2.5 px-3 whitespace-nowrap font-semibold">📖 Les 101 Recettes</button>
       <button id="tab-planning" onclick="switchTab('planning')" class="nav-tab text-stone-500 hover:text-brandDark border-b-2 border-transparent py-2.5 px-3 whitespace-nowrap">🗓️ Mon Planning (<span id="planningTabBadge">0</span>)</button>
       <button id="tab-shopping" onclick="switchTab('shopping')" class="nav-tab text-stone-500 hover:text-brandDark border-b-2 border-transparent py-2.5 px-3 whitespace-nowrap">🛒 Liste de Courses</button>
       <button id="tab-dashboard" onclick="switchTab('dashboard')" class="nav-tab text-stone-500 hover:text-brandDark border-b-2 border-transparent py-2.5 px-3 whitespace-nowrap">📊 Astuces Gamelles</button>
@@ -70,7 +70,7 @@
     <section id="sec-recipes" class="space-y-6">
       <div class="bg-white p-4 rounded-2xl border border-brandBorder shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 class="text-lg font-bold text-brandDark">Bibliothèque de Recettes (100 plats)</h2>
+          <h2 class="text-lg font-bold text-brandDark">Bibliothèque de Recettes (101 plats)</h2>
           <p class="text-sm text-stone-600 mt-1">Spécialement conçues pour le dîner + la gamelle du midi (4 portions). Sans choux de bruxelles, ni coriandre !</p>
         </div>
         <button onclick="pickRandomRecipe()" class="inline-flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold px-4 py-2.5 rounded-xl border border-amber-200 text-sm transition">
@@ -106,7 +106,7 @@
         </div>
       </div>
       <div class="flex items-center justify-between text-xs sm:text-sm text-stone-500 font-medium px-1">
-        <span id="recipesResultCount">Affichage de 100 recettes</span>
+        <span id="recipesResultCount">Affichage de 101 recettes</span>
         <button onclick="resetFilters()" class="text-brandAccent hover:underline text-xs">Réinitialiser</button>
       </div>
       <div id="recipeGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
@@ -220,7 +220,7 @@
   </div>
 
   <script>
-    // FULL 100 RECIPES DATABASE (GUARANTEED NO SYNTAX ERRORS)
+    // FULL 101 RECIPES DATABASE (GUARANTEED NO SYNTAX ERRORS)
     const recipesData = [
       { id: 1, title: "Poulet Basquaise express", prot: "poulet", equip: "cocotte", prep: "15 min", cook: "20 min", ingredients: [{name:"Cuisses de poulet",qty:"4 pièces",aisle:"Boucherie / Poissonnerie"},{name:"Poivrons tricolores",qty:"3 pièces",aisle:"Légumes & Fruits"},{name:"Tomates concassées",qty:"400g",aisle:"Épicerie & Féculents"},{name:"Oignon & ail",qty:"1 oignon, 2 gousses",aisle:"Légumes & Fruits"},{name:"Riz basmati",qty:"240g",aisle:"Épicerie & Féculents"}], steps: ["Faire revenir l'oignon, l'ail et les poivrons dans la cocotte.","Dorer le poulet.","Verser la tomate, saler, poivrer. Cuire 20 min sous pression.","Servir avec le riz."], gamelleTip: "Mélanger le riz avec la sauce pour garder le poulet bien moelleux." },
       { id: 2, title: "Curry de poulet au lait de coco", prot: "poulet", equip: "plaques", prep: "10 min", cook: "15 min", ingredients: [{name:"Blanc de poulet",qty:"600g",aisle:"Boucherie / Poissonnerie"},{name:"Carottes",qty:"3 pièces",aisle:"Légumes & Fruits"},{name:"Lait de coco",qty:"400ml",aisle:"Épicerie & Féculents"},{name:"Pâte de curry doux",qty:"2 c.à.s",aisle:"Épicerie & Féculents"},{name:"Ciboulette",qty:"1 botte",aisle:"Légumes & Fruits"},{name:"Riz thaï",qty:"240g",aisle:"Épicerie & Féculents"}], steps: ["Faire revenir le poulet et les carottes à la poêle.","Ajouter la pâte de curry puis mouiller au lait de coco.","Laisser mijoter à feu doux 12 minutes.","Parsemer de ciboulette."], gamelleTip: "Le lait de coco se conserve parfaitement." },
@@ -370,7 +370,7 @@
         return matchesProt && matchesEquip && matchesSearch && matchesFav;
       });
 
-      document.getElementById('recipesResultCount').innerText = `Affichage de ${filtered.length} / 100 recettes`;
+      document.getElementById('recipesResultCount').innerText = `Affichage de ${filtered.length} / 101 recettes`;
 
       if (filtered.length === 0) {
         grid.innerHTML = `
