@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mes Gamelles & Batch Cooking - 101 Recettes</title>
+  <title>Mes Gamelles & Batch Cooking </title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -339,7 +339,7 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Les 101 recettes complètes d'origine
+    // Les recettes complètes d'origine
     const baseRecipesData = [
       { id: 1, title: "Poulet Basquaise express", prot: "poulet", equip: "cocotte", prep: "15 min", cook: "20 min", ingredients: [{name:"Cuisses de poulet",qty:"4 pièces",aisle:"Boucherie / Poissonnerie"},{name:"Poivrons tricolores",qty:"3 pièces",aisle:"Légumes & Fruits"},{name:"Tomates concassées",qty:"400g",aisle:"Épicerie & Féculents"},{name:"Oignon & ail",qty:"1 oignon, 2 gousses",aisle:"Légumes & Fruits"},{name:"Riz basmati",qty:"240g",aisle:"Épicerie & Féculents"}], steps: ["Faire revenir l'oignon, l'ail et les poivrons dans la cocotte.","Dorer le poulet.","Verser la tomate, saler, poivrer. Cuire 20 min sous pression.","Servir avec le riz."], gamelleTip: "Mélanger le riz avec la sauce pour garder le poulet bien moelleux." },
       { id: 2, title: "Curry de poulet au lait de coco", prot: "poulet", equip: "plaques", prep: "10 min", cook: "15 min", ingredients: [{name:"Blanc de poulet",qty:"600g",aisle:"Boucherie / Poissonnerie"},{name:"Carottes",qty:"3 pièces",aisle:"Légumes & Fruits"},{name:"Lait de coco",qty:"400ml",aisle:"Épicerie & Féculents"},{name:"Pâte de curry doux",qty:"2 c.à.s",aisle:"Épicerie & Féculents"},{name:"Ciboulette",qty:"1 botte",aisle:"Légumes & Fruits"},{name:"Riz thaï",qty:"240g",aisle:"Épicerie & Féculents"}], steps: ["Faire revenir le poulet et les carottes à la poêle.","Ajouter la pâte de curry puis mouiller au lait de coco.","Laisser mijoter à feu doux 12 minutes.","Parsemer de ciboulette."], gamelleTip: "Le lait de coco se conserve parfaitement." },
