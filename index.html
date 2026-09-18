@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mes Gamelles & Batch Cooking </title>
+  <title>Mes Gamelles & Batch Cooking - 101 Recettes</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -244,7 +244,8 @@
       <div class="p-4 bg-stone-50 border-t flex justify-between items-center shrink-0">
         <div>
           <button onclick="closeModal()" class="px-4 py-2 text-stone-600 font-semibold text-xs rounded-xl hover:bg-stone-200">Fermer</button>
-          <button onclick="openRecipeForm(currentModalRecipeId)" class="px-4 py-2 text-brandPrimary font-semibold text-xs rounded-xl hover:bg-stone-200 border border-brandBorder ml-2">✏️ Modifier</button>
+          <!-- C'EST CE BOUTON QUI POSAIT PROBLÈME, ON LUI DONNE UN ID -->
+          <button id="modalEditBtn" class="px-4 py-2 text-brandPrimary font-semibold text-xs rounded-xl hover:bg-stone-200 border border-brandBorder ml-2">✏️ Modifier</button>
         </div>
         <button id="modalActionBtn" onclick="" class="bg-brandPrimary hover:bg-brandPrimaryHover text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow">+ Ajouter au menu</button>
       </div>
@@ -339,7 +340,7 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Les recettes complètes d'origine
+    // Les 101 recettes complètes d'origine
     const baseRecipesData = [
       { id: 1, title: "Poulet Basquaise express", prot: "poulet", equip: "cocotte", prep: "15 min", cook: "20 min", ingredients: [{name:"Cuisses de poulet",qty:"4 pièces",aisle:"Boucherie / Poissonnerie"},{name:"Poivrons tricolores",qty:"3 pièces",aisle:"Légumes & Fruits"},{name:"Tomates concassées",qty:"400g",aisle:"Épicerie & Féculents"},{name:"Oignon & ail",qty:"1 oignon, 2 gousses",aisle:"Légumes & Fruits"},{name:"Riz basmati",qty:"240g",aisle:"Épicerie & Féculents"}], steps: ["Faire revenir l'oignon, l'ail et les poivrons dans la cocotte.","Dorer le poulet.","Verser la tomate, saler, poivrer. Cuire 20 min sous pression.","Servir avec le riz."], gamelleTip: "Mélanger le riz avec la sauce pour garder le poulet bien moelleux." },
       { id: 2, title: "Curry de poulet au lait de coco", prot: "poulet", equip: "plaques", prep: "10 min", cook: "15 min", ingredients: [{name:"Blanc de poulet",qty:"600g",aisle:"Boucherie / Poissonnerie"},{name:"Carottes",qty:"3 pièces",aisle:"Légumes & Fruits"},{name:"Lait de coco",qty:"400ml",aisle:"Épicerie & Féculents"},{name:"Pâte de curry doux",qty:"2 c.à.s",aisle:"Épicerie & Féculents"},{name:"Ciboulette",qty:"1 botte",aisle:"Légumes & Fruits"},{name:"Riz thaï",qty:"240g",aisle:"Épicerie & Féculents"}], steps: ["Faire revenir le poulet et les carottes à la poêle.","Ajouter la pâte de curry puis mouiller au lait de coco.","Laisser mijoter à feu doux 12 minutes.","Parsemer de ciboulette."], gamelleTip: "Le lait de coco se conserve parfaitement." },
@@ -514,12 +515,11 @@
           
           const customRecs = data.customRecipes || [];
           
-          // Fusion des recettes de base et des recettes créées/modifiées
           let merged = [...baseRecipesData];
           customRecs.forEach(c => {
             const idx = merged.findIndex(r => r.id === c.id);
-            if(idx > -1) merged[idx] = c; // Si c'est une recette de base modifiée
-            else merged.push(c); // Si c'est une toute nouvelle recette
+            if(idx > -1) merged[idx] = c; 
+            else merged.push(c); 
           });
           
           recipesData = merged;
@@ -530,7 +530,6 @@
 
     async function saveCloudState() {
       const docRef = doc(db, "sharedData", "gamelles_state");
-      // On sauvegarde toutes les recettes ayant un ID > 101 OU celles de base qui ont été modifiées
       const customRecs = recipesData.filter(r => r.id > 101 || r.isModified);
       try {
         await updateDoc(docRef, {
@@ -708,7 +707,12 @@
       const stepOl = document.getElementById('modalStepsList'); stepOl.innerHTML = '';
       recipe.steps.forEach(s => { stepOl.innerHTML += `<li>${s}</li>`; });
       
-      document.getElementById('modalGamelleTip').innerText = recipe.gamelleTip; updateModalBtnState();
+      document.getElementById('modalGamelleTip').innerText = recipe.gamelleTip; 
+      
+      // LA CORRECTION EST ICI : on assigne l'action au bouton Modifier dynamiquement
+      document.getElementById('modalEditBtn').onclick = () => window.openRecipeForm(id);
+
+      updateModalBtnState();
       document.getElementById('recipeModal').classList.remove('hidden');
     }
 
@@ -817,7 +821,7 @@
             ...recipesData[idx],
             title, prot, equip, prep, cook, ingredients, steps,
             gamelleTip: gamelleTip || "Idéal pour le lendemain midi.",
-            isModified: true // Permet de forcer la sauvegarde dans le Cloud si c'est une recette de base
+            isModified: true 
           };
         }
       } else {
@@ -835,7 +839,7 @@
 
       await saveCloudState();
       closeAddRecipeModal();
-      updateAllViews(); // Met à jour l'accueil mais aussi le planning et les courses si la recette était sélectionnée
+      updateAllViews(); 
     };
 
     window.switchTab = (tabId) => {
