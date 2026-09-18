@@ -290,10 +290,18 @@
             <input type="text" id="newRecCook" value="15 min" class="w-full bg-stone-50 border border-stone-200 rounded-xl px-3.5 py-2 text-sm">
           </div>
         </div>
+        
+        <!-- NOUVELLE ZONE INGRÉDIENTS -->
         <div>
-          <label class="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-1">Ingrédients (séparés par des virgules: Nom:Quantité:Rayon)</label>
-          <textarea id="newRecIngs" rows="3" placeholder="Poulet:600g:Boucherie / Poissonnerie, Riz:240g:Épicerie & Féculents" class="w-full bg-stone-50 border border-stone-200 rounded-xl px-3.5 py-2 text-xs"></textarea>
+          <label class="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-1">Ingrédients</label>
+          <div id="dynamicIngredientsContainer" class="space-y-2 mb-2">
+            <!-- JavaScript va injecter les lignes ici -->
+          </div>
+          <button type="button" onclick="addIngredientRow()" class="text-brandAccent font-bold text-xs hover:underline flex items-center gap-1">
+            <span class="text-lg leading-none">+</span> Ajouter un ingrédient
+          </button>
         </div>
+
         <div>
           <label class="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-1">Étapes (une par ligne)</label>
           <textarea id="newRecSteps" rows="3" placeholder="1. Faire dorer le poulet...&#10;2. Ajouter le riz..." class="w-full bg-stone-50 border border-stone-200 rounded-xl px-3.5 py-2 text-xs"></textarea>
@@ -700,8 +708,35 @@
     }
     window.closeModal = () => document.getElementById('recipeModal').classList.add('hidden');
 
-    window.openAddRecipeModal = () => document.getElementById('addRecipeModal').classList.remove('hidden');
+    // ==========================================
+    // AJOUT DE RECETTE AVEC LIGNES DYNAMIQUES
+    // ==========================================
+    window.openAddRecipeModal = () => {
+      document.getElementById('dynamicIngredientsContainer').innerHTML = '';
+      addIngredientRow(); // Ajouter une première ligne vide par défaut
+      document.getElementById('addRecipeModal').classList.remove('hidden');
+    };
+    
     window.closeAddRecipeModal = () => document.getElementById('addRecipeModal').classList.add('hidden');
+
+    window.addIngredientRow = () => {
+      const container = document.getElementById('dynamicIngredientsContainer');
+      const row = document.createElement('div');
+      row.className = "flex gap-2 items-center bg-white p-2 rounded-xl border border-stone-200";
+      row.innerHTML = `
+        <input type="text" placeholder="Nom (ex: Riz)" class="ing-name flex-[2] bg-transparent text-sm focus:outline-none min-w-0">
+        <input type="text" placeholder="Qté (ex: 200g)" class="ing-qty flex-[1] bg-transparent text-sm focus:outline-none min-w-0">
+        <select class="ing-aisle flex-[2] bg-stone-100 rounded-lg px-2 text-xs py-1.5 outline-none text-stone-600 min-w-0 truncate">
+          <option value="Boucherie / Poissonnerie">🥩 Bouch/Poiss</option>
+          <option value="Légumes & Fruits">🥦 Lég/Fruits</option>
+          <option value="Épicerie & Féculents" selected>🌾 Épicerie</option>
+          <option value="Produits Frais & Crémerie">🧀 Frais/Crème</option>
+          <option value="Divers / Hors Cuisine">🛍️ Divers</option>
+        </select>
+        <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600 font-bold px-2">✕</button>
+      `;
+      container.appendChild(row);
+    };
 
     window.submitNewRecipe = async () => {
       const title = document.getElementById('newRecTitle').value.trim();
@@ -713,11 +748,20 @@
       const cook = document.getElementById('newRecCook').value;
       const gamelleTip = document.getElementById('newRecTip').value;
 
-      const rawIngs = document.getElementById('newRecIngs').value.split(',');
-      const ingredients = rawIngs.map(r => {
-        const parts = r.split(':');
-        return { name: parts[0]?.trim() || "Ingrédient", qty: parts[1]?.trim() || "1", aisle: parts[2]?.trim() || "Épicerie & Féculents" };
+      // Récupérer tous les ingrédients des lignes
+      const ingredients = [];
+      document.querySelectorAll('#dynamicIngredientsContainer > div').forEach(row => {
+        const name = row.querySelector('.ing-name').value.trim();
+        const qty = row.querySelector('.ing-qty').value.trim() || "1";
+        const aisle = row.querySelector('.ing-aisle').value;
+        if(name) { // On ajoute seulement si le nom n'est pas vide
+          ingredients.push({ name, qty, aisle });
+        }
       });
+
+      if(ingredients.length === 0) {
+        return alert("Veuillez ajouter au moins un ingrédient valide !");
+      }
 
       const steps = document.getElementById('newRecSteps').value.split('\n').filter(s => s.trim() !== "");
 
@@ -728,6 +772,13 @@
 
       recipesData.push(newRecipe);
       await saveCloudState();
+      
+      // Réinitialiser le formulaire
+      document.getElementById('newRecTitle').value = '';
+      document.getElementById('newRecSteps').value = '';
+      document.getElementById('newRecTip').value = '';
+      document.getElementById('dynamicIngredientsContainer').innerHTML = '';
+      
       closeAddRecipeModal();
       renderRecipes();
       alert("Recette ajoutée et partagée avec succès !");
